@@ -1,0 +1,54 @@
+[package]
+name = "Lailai"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+#异步
+tokio = { version = "1", features = ["full"] }
+async-trait = "0.1"
+futures = "0.3"
+
+#json/yaml解析
+serde = { version = "1", features = ["derive"] }
+serde_json = "1.0"
+serde_yaml = "0.8"
+
+#生成解析二维码
+qrcode = "0.12.0"
+bardecoder = "0.3.0"
+image = "0.23"
+
+#集合处理
+#itertools = "0.10"
+#时间处理
+chrono = "0.4"
+
+#日志相关
+log = "0.4"
+simplelog = "0.12.0"
+
+#sendreport缓存数据
+sqlx = { version = "0.5", features = ["runtime-tokio-rustls", "postgres"] }
+
+fflogsv1 = { path = "./fflogsv1" }
+#qq协议库
+ricq = { git = "https://github.com/lz1998/ricq" }
+
+[target.x86_64-unknown-linux-musl.dependencies]
+openssl = { version = "0.10", features = ["vendored"] }
+[target.x86_64-unknown-linux-gun.dependencies]
+openssl = { version = "0.10", features = ["vendored"] }
+[profile.release]
+lto = true
+# opt-level = 3
+codegen-units = 1
+# panic = "abort"
+# debug = 0
+# strip = "none"
+[profile]
+
+[workspace]
+members = ["fflogsv1"]
