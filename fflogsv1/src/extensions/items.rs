@@ -2,12 +2,13 @@ use futures::future::try_join_all;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_json::Value;
+use thiserror::Error;
 
 use crate::FF14;
 
 impl FF14 {
     ///从wakingsands搜索物品
-    pub async fn get_items(&self, name: &str) -> Result<Vec<Items>, Box<dyn std::error::Error>> {
+    pub async fn get_items(&self, name: &str) -> Result<Vec<Item>, GetItemError> {
         let result:ItemsResult= self.client.get("https://cafemaker.wakingsands.com/search?string_algo=multi_match&limit=6&indexes=Item")
         .query(&[("string",name)])
         .send()
@@ -21,7 +22,21 @@ impl FF14 {
         let result = try_join_all(f).await?;
         Ok(result)
     }
-    async fn get_icon(&self, item: WResult) -> Result<Items, Box<dyn std::error::Error>> {
+    ///从wakingsands搜索物品
+    pub async fn get_first_item(&self, name: &str) -> Result<Item, GetItemError> {
+        let result:ItemsResult= self.client.get("https://cafemaker.wakingsands.com/search?string_algo=multi_match&limit=6&indexes=Item")
+            .query(&[("string",name)])
+            .send()
+            .await?
+            .json()
+            .await?;
+        let first_item = result.results.first();
+        match first_item {
+            Some(first_item) => Ok(self.get_icon(first_item.clone()).await?),
+            None => Err(GetItemError::ItemNotFoundError),
+        }
+    }
+    async fn get_icon(&self, item: WResult) -> Result<Item, GetItemError> {
         let result = self
             .client
             .get(format!("{}{}", "https://xivapi.com", item.icon))
@@ -30,10 +45,10 @@ impl FF14 {
             .bytes()
             .await?
             .to_vec();
-        Ok(Items {
+        Ok(Item {
             icon: result,
             id: item.id,
-            name: item.name,
+            name: item.name.clone(),
         })
     }
 }
@@ -95,8 +110,18 @@ pub struct WResult {
     pub score: String,
 }
 
-pub struct Items {
+pub struct Item {
     pub id: i32,
     pub name: String,
     pub icon: Vec<u8>,
+}
+
+#[derive(Debug, Error)]
+pub enum GetItemError {
+    #[error("😒没有找到物品")]
+    ItemNotFoundError,
+    #[error("🙃请求查询接口错误,{0}")]
+    ReqwestError(#[from] reqwest::Error),
+    #[error(transparent)]
+    Other(#[from] Box<dyn std::error::Error>),
 }
