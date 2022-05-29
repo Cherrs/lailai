@@ -37,7 +37,7 @@ impl FF14 {
         zone: Option<i32>,
         timeframe: &str,
     ) -> Result<Vec<Parses>, Box<dyn std::error::Error>> {
-        info!("{}...正在获取", character_name);
+        info!("{} ⏳︎正在获取", character_name);
         let mut build = self
             .client
             .get(format!(
@@ -49,7 +49,7 @@ impl FF14 {
             build = build.query(&[("zone", zone.unwrap())]);
         }
         let rsp = build.send().await?.json::<Vec<Parses>>().await?;
-        info!("获取 {} 完成", character_name);
+        info!("获取 {} ✅", character_name);
         Ok(rsp)
     }
     ///根据code获取这场日志的战斗记录
