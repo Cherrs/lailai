@@ -1,4 +1,3 @@
-#![feature(iter_collect_into)]
 #![feature(let_chains)]
 mod config;
 mod message_handler;
