@@ -120,8 +120,14 @@ fn initlog() {
         .set_thread_mode(ThreadLogMode::IDs)
         .set_thread_padding(ThreadPadding::Left(0))
         .build();
+    let level;
+    if let Ok(debug) = env::var("debug") && debug == "1" {
+        level = LevelFilter::Debug;
+    } else {
+        level = LevelFilter::Info;
+    }
     CombinedLogger::init(vec![TermLogger::new(
-        LevelFilter::Debug,
+        level,
         logconfig,
         TerminalMode::Mixed,
         ColorChoice::Auto,
