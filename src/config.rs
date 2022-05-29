@@ -47,7 +47,9 @@ pub async fn init() {
             let mut conf: HashMap<i64, Configoption> = HashMap::new();
             let con = get_config_file().await;
             for i in con {
-                conf.insert(i.qq, i);
+                if i.qq != 0 {
+                    conf.insert(i.qq, i);
+                }
             }
             conf
         })
