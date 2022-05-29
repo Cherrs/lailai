@@ -89,7 +89,7 @@ pub async fn trysendmessageorinit(client: &Client) -> Result<(), Box<dyn std::er
                                     let mut at = At::new(c.qq);
                                     at.display = u.character_name.to_string();
                                     msg.push(at);
-                                    msg.push(Text::new("".to_string()));
+                                    msg.push(Text::new(" ".to_string()));
                                 } else {
                                     msg.push(Text::new(format!("{} ", u.character_name)));
                                 }
