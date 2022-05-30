@@ -93,6 +93,24 @@ impl Handler for MyHandler {
             QEvent::FriendRequest(m) => {
                 info!("REQUEST (UIN={}): {}", m.request.req_uin, m.request.message);
             }
+            QEvent::NewMember(m) => {
+                if m.new_member.member_uin == m.client.uin().await {
+                    let mut mc = MessageChain::default();
+                    let s = String::from_utf8(vec![
+                        229, 176, 143, 232, 173, 166, 229, 175, 159, 230, 157, 165, 229, 149, 166,
+                        239, 188, 129, 230, 173, 164, 233, 161, 185, 231, 155, 174, 230, 152, 175,
+                        228, 189, 191, 231, 148, 168, 65, 71, 80, 76, 32, 51, 46, 48, 229, 141,
+                        143, 232, 174, 174, 229, 188, 128, 230, 186, 144, 231, 154, 132, 229, 133,
+                        141, 232, 180, 185, 230, 156, 186, 229, 153, 168, 228, 186, 186,
+                    ])
+                    .unwrap();
+                    mc.push(Text::new(s));
+                    m.client
+                        .send_group_message(m.new_member.group_code, mc)
+                        .await
+                        .unwrap();
+                }
+            }
             _ => {
                 info!("{:?}", e);
             }
