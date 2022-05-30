@@ -10,16 +10,35 @@
 
 ## 配置
 
-- 程序会优先使用当前目录下config.yaml里的配置
+- 程序会优先使用当前目录下config.yaml文件的配置
 - 如果config.yaml文件不存在则使用环境变量
 
 config.yaml
 
 ``` yaml
 rsconstr: postgres://postgres:postgres@localhost/xdff14
-logskey: {fflogs的app key,仅支持v1}
+logskey: appkey
+interval: 60
 ```
 
+- `rsconstr` 数据库配置
+- `logskey` fflogs的V1 Client Key
+- `interval` 重试间隔，单位是秒
+
+## 指令
+
+目前支持的命令：
+
+- [x] 模糊搜索物品
+- [x] 检索物品价格
+- [x] 查询玩家logs数据
+- [ ] 生产相关功能
+
+### 模糊搜索物品
+
+`@小警察卸坤 6级药 物品`
+
+![模糊搜索物品](README/%24908%603I%24%25STJ%5DKKXK2%5BP%5BPC.png)
 ## 实时发送logs数据到群
 
 - 从<https://www.fflogs.com/>获取数据
