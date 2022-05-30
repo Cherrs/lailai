@@ -35,7 +35,9 @@ pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Err(e) => error!("{:?}", e),
             }
         });
-        tokio::time::sleep(Duration::from_secs(60)).await;
+        let interval = env::var("interval").unwrap().parse::<u64>().unwrap();
+        println!("{}", interval);
+        tokio::time::sleep(Duration::from_secs(interval)).await;
     }
     //handle.await.unwrap();
     //Ok(())

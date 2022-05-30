@@ -81,6 +81,9 @@ pub async fn init() {
                 for i in con {
                     env::set_var(i.0, i.1);
                 }
+                if env::var("interval").is_err() {
+                    env::set_var("interval", "60");
+                }
             }
             Err(e) => debug!("配置错误，使用环境变量{}", e),
         },
