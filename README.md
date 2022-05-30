@@ -39,6 +39,7 @@ interval: 60
 `@小警察卸坤 6级药 物品`
 
 ![模糊搜索物品](README/%24908%603I%24%25STJ%5DKKXK2%5BP%5BPC.png)
+
 ## 实时发送logs数据到群
 
 - 从<https://www.fflogs.com/>获取数据
