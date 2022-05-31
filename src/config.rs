@@ -92,9 +92,11 @@ pub async fn init() {
 }
 
 async fn get_config_file() -> Vec<Configoption> {
-    let file = fs::read_to_string("group_config.yaml")
-        .await
-        .expect("读取配置失败");
+    let mut path = "group_config.yaml";
+    if std::fs::try_exists("group_config.dev.yaml").unwrap() {
+        path = "group_config.dev.yaml";
+    }
+    let file = fs::read_to_string(path).await.expect("读取配置失败");
     let con: Vec<Configoption> = serde_yaml::from_str(&file).expect("配置文件格式不正确");
     con
 }
