@@ -4,3 +4,4 @@ config.yaml
 session.key
 device.json
 target/
+group_config.dev.yaml
