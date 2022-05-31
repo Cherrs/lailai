@@ -1,5 +1,4 @@
-use std::sync::Arc;
-
+use crate::config::GROUP_CONF_BYQQ;
 use async_trait::async_trait;
 use chrono::{FixedOffset, TimeZone, Utc};
 use fflogsv1::FF14;
@@ -10,8 +9,7 @@ use ricq::{
     msg::MessageChain,
     Client,
 };
-
-use crate::config::GROUP_CONF_BYQQ;
+use std::sync::Arc;
 
 pub struct MyHandler {
     pub ff14client: FF14,

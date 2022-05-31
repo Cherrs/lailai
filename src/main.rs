@@ -1,9 +1,12 @@
 #![feature(let_chains)]
+#![feature(path_try_exists)]
 mod config;
 mod message_handler;
-//mod messagebuild;
+mod pgstore;
 mod sendreport;
-
+mod sledstore;
+mod store;
+use crate::message_handler::MyHandler;
 use fflogsv1::FF14;
 use log::error;
 use qrcode::QrCode;
@@ -17,8 +20,6 @@ use ricq::{
 use simplelog::*;
 use std::{env, path::Path, sync::Arc, time::Duration};
 use tokio::{net::TcpStream, task::JoinHandle};
-
-use crate::message_handler::MyHandler;
 
 #[tokio::main]
 pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
