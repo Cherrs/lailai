@@ -3,7 +3,6 @@ use crate::{
     message_handler,
     pgstore::PgStore,
     sledstore::SledStore,
-    store::Store,
 };
 use chrono::{DateTime, Duration, FixedOffset, TimeZone, Utc};
 use fflogsv1::{extensions::*, parses::Parses, FF14};
@@ -20,10 +19,13 @@ use std::{collections::HashMap, env};
 use tokio::time::Instant;
 
 pub async fn trysendmessageorinit(client: &Client) -> Result<(), Box<dyn std::error::Error>> {
-    let store = PgStore::new(&env::var("rsconstr").expect("数据库没配置！"))
-        .await
-        .unwrap();
-    //let store = SledStore::new(&env::var("localpath").expect("数据库没配置！"));
+    let store = match env::var("store")
+        .unwrap_or_else(|_| "local".to_string())
+        .as_str()
+    {
+        "postgres" => PgStore::create(&env::var("rsconstr").expect("数据库没配置！")).await,
+        _ => SledStore::create(&env::var("localpath").unwrap_or_else(|_| "/db/cache".to_string())),
+    };
     let now = Instant::now();
     //开始请求api获取角色数据
     let ff14 = FF14::new(env::var("logskey").unwrap().as_str());

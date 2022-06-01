@@ -7,6 +7,7 @@ mod sendreport;
 mod sledstore;
 mod store;
 use crate::message_handler::MyHandler;
+use config::GROUP_CONF;
 use fflogsv1::FF14;
 use log::error;
 use qrcode::QrCode;
@@ -26,22 +27,28 @@ pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
     //初始化配置
     config::init().await;
     initlog();
-    let (_handle, client) = initbot().await;
-    loop {
-        //获取logs数据，检测更新发送到群
+    let (handle, client) = initbot().await;
+    if GROUP_CONF.get().is_some() {
         let cli = client.clone();
         tokio::spawn(async move {
-            match sendreport::trysendmessageorinit(&cli).await {
-                Ok(_) => {}
-                Err(e) => error!("{:?}", e),
+            loop {
+                //获取logs数据，检测更新发送到群
+                match sendreport::trysendmessageorinit(&cli).await {
+                    Ok(_) => {}
+                    Err(e) => error!("{:?}", e),
+                }
+                let interval = env::var("interval")
+                    .unwrap_or_else(|_| "60".to_string())
+                    .parse::<u64>()
+                    .unwrap();
+                println!("{}", interval);
+                tokio::time::sleep(Duration::from_secs(interval)).await;
             }
         });
-        let interval = env::var("interval").unwrap().parse::<u64>().unwrap();
-        println!("{}", interval);
-        tokio::time::sleep(Duration::from_secs(interval)).await;
     }
-    //handle.await.unwrap();
-    //Ok(())
+
+    handle.await.unwrap();
+    Ok(())
 }
 ///初始化机器人
 pub async fn initbot() -> (JoinHandle<()>, Arc<Client>) {
@@ -54,20 +61,30 @@ pub async fn initbot() -> (JoinHandle<()>, Arc<Client>) {
         .expect("failed to parse device info"),
         false => {
             let d = Device::random();
-            tokio::fs::write("device.json", serde_json::to_string(&d).unwrap())
-                .await
-                .expect("failed to write device info to file");
+            tokio::fs::write(
+                "device.json",
+                serde_json::to_string(&d).expect("device.json写入失败，请检查权限"),
+            )
+            .await
+            .expect("failed to write device info to file");
             d
         }
     };
     let token: Option<Token> = match Path::new("session.key").exists() {
-        true => {
-            serde_json::from_str(&tokio::fs::read_to_string("session.key").await.unwrap()).unwrap()
-        }
+        true => serde_json::from_str(
+            &tokio::fs::read_to_string("session.key")
+                .await
+                .expect("无法读取session.key，请检查权限"),
+        )
+        .unwrap(),
         false => None,
     };
     let myh = MyHandler {
-        ff14client: FF14::new(env::var("logskey").unwrap().as_str()),
+        ff14client: FF14::new(
+            env::var("logskey")
+                .unwrap_or_else(|_| "none".to_string())
+                .as_str(),
+        ),
     };
     let client = Arc::new(Client::new(device, get_version(Protocol::IPad), myh));
     let stream = TcpStream::connect(client.get_address())
@@ -80,6 +97,7 @@ pub async fn initbot() -> (JoinHandle<()>, Arc<Client>) {
         let resp = client.fetch_qrcode().await.expect("failed to fetch qrcode");
         use ricq::ext::login::auto_query_qrcode;
         match resp {
+            //登录二维码展示
             ricq::QRCodeState::ImageFetch(x) => {
                 let img = image::load_from_memory(&x.image_data).unwrap();
                 let decoder = bardecoder::default_decoder();
@@ -108,7 +126,9 @@ pub async fn initbot() -> (JoinHandle<()>, Arc<Client>) {
     {
         let token = client.gen_token().await;
         let tokenstr = serde_json::to_vec(&token).unwrap();
-        tokio::fs::write("session.key", tokenstr).await.unwrap();
+        tokio::fs::write("session.key", tokenstr)
+            .await
+            .expect("无法写入session.key，请检查");
     }
     (handle, client)
 }

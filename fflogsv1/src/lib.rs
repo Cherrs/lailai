@@ -46,7 +46,7 @@ impl FF14 {
             ))
             .query(&[("metric", metric), ("timeframe", timeframe)]);
         if zone.is_some() {
-            build = build.query(&[("zone", zone.unwrap())]);
+            build = build.query(&[("zone", zone.expect("获取character_parses的zone为空"))]);
         }
         let rsp = build.send().await?.json::<Vec<Parses>>().await?;
         info!("获取 {} ✅", character_name);

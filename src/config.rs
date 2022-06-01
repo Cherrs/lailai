@@ -30,50 +30,54 @@ pub static GROUP_CONF_BYQQ: OnceCell<HashMap<i64, Configoption>> = OnceCell::con
 pub static GROUP_CONF_BYGROUPID: OnceCell<HashMap<i64, Vec<Configoption>>> = OnceCell::const_new();
 
 pub async fn init() {
-    GROUP_CONF
-        .get_or_init(|| async {
-            let mut conf: HashMap<&'static str, Configoption> = HashMap::new();
-            let con = get_config_file().await;
-            for i in con {
-                let name = i.name.clone();
-                let server = i.server.clone();
-                conf.insert(Box::leak(format!("{name}/{server}").into_boxed_str()), i);
-            }
-            conf
-        })
-        .await;
-    GROUP_CONF_BYQQ
-        .get_or_init(|| async {
-            let mut conf: HashMap<i64, Configoption> = HashMap::new();
-            let con = get_config_file().await;
-            for i in con {
-                if i.qq != 0 {
-                    conf.insert(i.qq, i);
+    if let Some(con) = get_config_file().await {
+        GROUP_CONF
+            .get_or_init(|| async {
+                let mut conf: HashMap<&'static str, Configoption> = HashMap::new();
+                for i in &con {
+                    let name = i.name.clone();
+                    let server = i.server.clone();
+                    conf.insert(
+                        Box::leak(format!("{name}/{server}").into_boxed_str()),
+                        i.clone(),
+                    );
                 }
-            }
-            conf
-        })
-        .await;
-    GROUP_CONF_BYGROUPID
-        .get_or_init(|| async {
-            let mut conf: HashMap<i64, Vec<Configoption>> = HashMap::new();
-            let con = get_config_file().await;
-            for i in con {
-                for ii in &i.group {
-                    match conf.get_mut(&ii.id) {
-                        Some(users) => {
-                            let x = i.clone();
-                            users.push(x);
-                        }
-                        None => {
-                            conf.insert(ii.id, vec![i.clone()]);
+                conf
+            })
+            .await;
+        GROUP_CONF_BYQQ
+            .get_or_init(|| async {
+                let mut conf: HashMap<i64, Configoption> = HashMap::new();
+                //let con = get_config_file().await;
+                for i in &con {
+                    if i.qq != 0 {
+                        conf.insert(i.qq, i.clone());
+                    }
+                }
+                conf
+            })
+            .await;
+        GROUP_CONF_BYGROUPID
+            .get_or_init(|| async {
+                let mut conf: HashMap<i64, Vec<Configoption>> = HashMap::new();
+                //let con = get_config_file().await;
+                for i in con {
+                    for ii in &i.group {
+                        match conf.get_mut(&ii.id) {
+                            Some(users) => {
+                                let x = i.clone();
+                                users.push(x);
+                            }
+                            None => {
+                                conf.insert(ii.id, vec![i.clone()]);
+                            }
                         }
                     }
                 }
-            }
-            conf
-        })
-        .await;
+                conf
+            })
+            .await;
+    }
     match fs::read_to_string("config.yaml").await {
         Ok(f) => match serde_yaml::from_str(&f) {
             Ok(x) => {
@@ -91,12 +95,15 @@ pub async fn init() {
     }
 }
 
-async fn get_config_file() -> Vec<Configoption> {
+async fn get_config_file() -> Option<Vec<Configoption>> {
     let mut path = "group_config.yaml";
-    if std::fs::try_exists("group_config.dev.yaml").unwrap() {
+    if let Ok(t) = std::fs::try_exists("group_config.dev.yaml") && t {
         path = "group_config.dev.yaml";
     }
-    let file = fs::read_to_string(path).await.expect("读取配置失败");
-    let con: Vec<Configoption> = serde_yaml::from_str(&file).expect("配置文件格式不正确");
-    con
+    if let Ok(file) = fs::read_to_string(path).await {
+        let con: Vec<Configoption> = serde_yaml::from_str(&file).expect("配置文件格式不正确");
+        Some(con)
+    } else {
+        None
+    }
 }

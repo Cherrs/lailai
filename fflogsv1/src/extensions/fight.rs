@@ -7,7 +7,11 @@ impl FF14 {
         fight: i64,
     ) -> Result<GetFightDto, Box<dyn std::error::Error>> {
         let report = self.fights_report(code).await?;
-        let report = report.fights.iter().find(|x| x.id == fight).unwrap();
+        let report = report
+            .fights
+            .iter()
+            .find(|x| x.id == fight)
+            .expect("没有找到这场战斗");
         let dead = self
             .tables_report_deaths(code, report.start_time, report.end_time)
             .await?;
@@ -41,7 +45,6 @@ mod tests {
     use crate::FF14;
     #[tokio::test]
     async fn get_fight() {
-        //let n = env::var("logskey").unwrap();
         let ff14client = FF14::new("ddac920f50d421116883220e4d149fdf");
         let dtos = ff14client.get_fight("1MahAGrFRJ9BVqYK", 1).await.unwrap();
         println!("{:?}", dtos);

@@ -8,10 +8,10 @@ pub struct SledStore {
 }
 
 impl SledStore {
-    pub fn new(path: &str) -> SledStore {
-        SledStore {
+    pub fn create(path: &str) -> Box<dyn Store> {
+        Box::new(SledStore {
             db: sled::open(path).expect("本地存储无法使用"),
-        }
+        })
     }
 }
 
@@ -46,4 +46,28 @@ impl Store for SledStore {
             .insert(parse.start_time.to_be_bytes(), data)
             .unwrap();
     }
+}
+
+#[test]
+fn delete() {
+    let db = sled::open("db/test").expect("本地存储无法使用");
+    db.remove(1653815603808_i64.to_be_bytes()).unwrap();
+    db.flush().unwrap();
+}
+
+#[test]
+fn insert() {
+    let db = sled::open("db/test").expect("本地存储无法使用");
+    for i in 1_i64..100_i64 {
+        db.insert(i.to_be_bytes(), i.to_be_bytes().to_vec())
+            .unwrap();
+    }
+    db.flush().unwrap();
+}
+
+#[tokio::test]
+async fn query() {
+    let db = SledStore::create("db/test");
+    let mm = db.query_by_start_time(50).await;
+    println!("{:?}", mm);
 }

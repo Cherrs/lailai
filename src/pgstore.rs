@@ -9,9 +9,13 @@ pub struct PgStore {
     pool: Pool<Postgres>,
 }
 impl PgStore {
-    pub async fn new(str: &str) -> Result<PgStore, Box<dyn std::error::Error>> {
-        let pool = PgPoolOptions::new().max_connections(5).connect(str).await?;
-        Ok(PgStore { pool })
+    pub async fn create(str: &str) -> Box<dyn Store> {
+        let pool = PgPoolOptions::new()
+            .max_connections(5)
+            .connect(str)
+            .await
+            .unwrap();
+        Box::new(PgStore { pool })
     }
 }
 
@@ -82,3 +86,6 @@ impl Store for PgStore {
         count.0 == 0
     }
 }
+
+#[test]
+fn test() {}
