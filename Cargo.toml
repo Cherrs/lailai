@@ -49,9 +49,9 @@ openssl = { version = "0.10", features = ["vendored"] }
 openssl = { version = "0.10", features = ["vendored"] }
 [profile.release]
 lto = true
-# opt-level = 3
-codegen-units = 1
-# panic = "abort"
+opt-level = "z"
+#codegen-units = 1
+panic = "abort"
 # debug = 0
 # strip = "none"
 [profile]
