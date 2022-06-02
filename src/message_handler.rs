@@ -58,14 +58,14 @@ impl Handler for MyHandler {
                             }
                         }
                         _=>{
-
-                            let msg = send_highest_data_to_group(m.message.from_uin,&self.ff14client,).await;
-                            if let Some(msg) = msg{
-                                if let Err(e) = m.client.send_group_message(m.message.group_code, msg).await{
-                                    error!("发送错误{}",e);
+                            if let Some(_)= GROUP_CONF_BYQQ.get(){
+                                let msg = send_highest_data_to_group(m.message.from_uin,&self.ff14client,).await;
+                                if let Some(msg) = msg{
+                                    if let Err(e) = m.client.send_group_message(m.message.group_code, msg).await{
+                                        error!("发送错误{}",e);
+                                    }
                                 }
                             }
-
                         }
                     }
                 }
