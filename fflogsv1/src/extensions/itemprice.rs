@@ -33,13 +33,16 @@ impl FF14 {
             let mut is: Vec<ItemsPriceList> = i
                 .listings
                 .iter()
-                .map(|x| ItemsPriceList {
-                    num: x.quantity,
-                    price: x.total,
-                    unit_price: x.price_per_unit,
-                    server_name: i.world_name.to_string(),
-                    seller_name: x.retainer_name.clone(),
-                    last_update_time: i.last_upload_time,
+                .map(|x| {
+                    let result = ItemsPriceList {
+                        num: x.quantity,
+                        price: x.total,
+                        unit_price: x.price_per_unit,
+                        server_name: i.world_name.as_ref().unwrap().to_string(),
+                        seller_name: x.retainer_name.clone(),
+                        last_update_time: i.last_upload_time,
+                    };
+                    result
                 })
                 .collect();
             items.append(&mut is);
@@ -77,7 +80,7 @@ pub struct ItemPriceResult {
     #[serde(rename = "itemID")]
     pub item_id: i64,
     #[serde(rename = "worldID")]
-    pub world_id: i64,
+    pub world_id: Option<i64>,
     pub last_upload_time: i64,
     pub listings: Vec<Listing>,
     pub recent_history: Vec<RecentHistory>,
@@ -104,7 +107,7 @@ pub struct ItemPriceResult {
     pub max_price_nq: i64,
     #[serde(rename = "maxPriceHQ")]
     pub max_price_hq: i64,
-    pub world_name: String,
+    pub world_name: Option<String>,
 }
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]

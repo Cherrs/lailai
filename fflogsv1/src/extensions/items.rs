@@ -20,6 +20,9 @@ impl FF14 {
             f.push(self.get_icon(i));
         }
         let result = try_join_all(f).await?;
+        if result.is_empty() {
+            return Err(GetItemError::ItemNotFoundError);
+        }
         Ok(result)
     }
     ///从wakingsands搜索物品

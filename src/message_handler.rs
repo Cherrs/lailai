@@ -1,7 +1,7 @@
 use crate::config::GROUP_CONF_BYQQ;
 use async_trait::async_trait;
 use chrono::{FixedOffset, TimeZone, Utc};
-use fflogsv1::FF14;
+use fflogsv1::{extensions::items::GetItemError, FF14};
 use log::{error, info};
 use ricq::{
     handler::{Handler, QEvent},
@@ -35,22 +35,17 @@ impl Handler for MyHandler {
                                 Some(c) if c == "物品"=>{
                                     let itemstr:Vec<&str> = args.collect();
                                     let itemstr = itemstr.join(" ");
-                                    if let Some(msg) = send_item_data_to_group(&itemstr,m.message.group_code,&self.ff14client,&m.client)
-                                    .await{
-                                        if let Err(e) = m.client.send_group_message(m.message.group_code, msg).await{
-                                            error!("发送错误{}",e);
-                                        }
+                                    let msg = send_item_data_to_group(&itemstr,m.message.group_code,&self.ff14client,&m.client).await;
+                                    if let Err(e) = m.client.send_group_message(m.message.group_code, msg).await{
+                                        error!("发送错误{}",e);
                                     }
-                                    info!("{}",itemstr);
                                 }
                                 Some(c) if c == "价格"=>{
                                     let itemstr:Vec<&str> = args.collect();
                                     let itemstr = itemstr.join(" ");
-                                    if let Some(msg) = send_item_price_to_group(&itemstr,m.message.group_code,&self.ff14client,&m.client)
-                                    .await{
-                                        if let Err(e) = m.client.send_group_message(m.message.group_code, msg).await{
-                                            error!("发送错误{}",e);
-                                        }
+                                    let msg = send_item_price_to_group(&itemstr,m.message.group_code,&self.ff14client,&m.client).await;
+                                    if let Err(e) = m.client.send_group_message(m.message.group_code, msg).await{
+                                        error!("发送错误{}",e);
                                     }
                                     info!("{}",itemstr);
                                 }
@@ -156,16 +151,20 @@ async fn send_item_data_to_group(
     group_code: i64,
     ff14client: &FF14,
     client: &Arc<Client>,
-) -> Option<MessageChain> {
+) -> MessageChain {
+    let mut msg = MessageChain::default();
     let icon = match ff14client.get_items(item_name).await {
         Ok(icon) => Some(icon),
         Err(err) => {
-            error!("获取物品失败,{}", err);
-            None
+            let errmsg = format!("获取物品失败,{}", err);
+            error!("{}", errmsg);
+            if let GetItemError::ItemNotFoundError = err {
+                msg.push(Text::new(format!("😒什么是 {} ?", item_name)));
+            }
+            return msg;
         }
     };
     if let Some(icon) = icon {
-        let mut msg = MessageChain::default();
         for i in icon {
             if let Ok(g) = client.upload_group_image(group_code, i.icon).await {
                 msg.push(g);
@@ -173,9 +172,8 @@ async fn send_item_data_to_group(
             let name = Text::new(format!("{}\n", i.name));
             msg.push(name);
         }
-        return Some(msg);
     }
-    None
+    msg
 }
 
 ///🎉查询物品价格并且发送
@@ -184,40 +182,43 @@ async fn send_item_price_to_group(
     group_code: i64,
     ff14client: &FF14,
     client: &Arc<Client>,
-) -> Option<MessageChain> {
+) -> MessageChain {
+    let mut msg = MessageChain::default();
     let item_price = match ff14client.get_item_price(item_name).await {
-        Ok(icon) => Some(icon),
+        Ok(icon) => icon,
         Err(err) => {
-            error!("获取物品价格失败,{}", err);
-            None
+            let emsg = format!("获取物品价格失败,{}", err);
+            error!("{}", emsg);
+            msg.push(Text::new(emsg));
+            return msg;
         }
     };
-    if let Some(item_price) = item_price {
-        let mut item_price_list = item_price.price_list.iter().take(8);
-        let mut msg = MessageChain::default();
-        if let Ok(g) = client.upload_group_image(group_code, item_price.icon).await {
-            msg.push(g);
-        }
-        msg.push(Text::new(item_price.name));
-        let mut last_update_time = i64::MAX;
-        for i in item_price_list.by_ref() {
-            if last_update_time > i.last_update_time {
-                last_update_time = i.last_update_time;
-            }
-            let name = Text::new(format!(
-                "\n{} x {} 总价:{} {}({})",
-                i.num, i.unit_price, i.price, i.seller_name, i.server_name
-            ));
-            msg.push(name);
-        }
-        let last_update_time = Utc
-            .timestamp_millis(last_update_time)
-            .with_timezone(&FixedOffset::east(8 * 3600));
-        msg.push(Text::new(format!(
-            "\n最后更新时间 {}",
-            last_update_time.format("%Y-%m-%d %H:%M:%S")
-        )));
-        return Some(msg);
+    if item_price.price_list.is_empty() {
+        msg.push(Text::new(format!("板子上没有{}", item_price.name)));
+        return msg;
     }
-    None
+    let mut item_price_list = item_price.price_list.iter().take(8);
+    if let Ok(g) = client.upload_group_image(group_code, item_price.icon).await {
+        msg.push(g);
+    }
+    msg.push(Text::new(item_price.name));
+    let mut last_update_time = i64::MAX;
+    for i in item_price_list.by_ref() {
+        if last_update_time > i.last_update_time {
+            last_update_time = i.last_update_time;
+        }
+        let name = Text::new(format!(
+            "\n{} x {} 总价:{} {}({})",
+            i.num, i.unit_price, i.price, i.seller_name, i.server_name
+        ));
+        msg.push(name);
+    }
+    let last_update_time = Utc
+        .timestamp_millis(last_update_time)
+        .with_timezone(&FixedOffset::east(8 * 3600));
+    msg.push(Text::new(format!(
+        "\n最后更新时间 {}",
+        last_update_time.format("%Y-%m-%d %H:%M:%S")
+    )));
+    msg
 }
