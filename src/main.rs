@@ -17,7 +17,7 @@ use ricq::{
     device::Device,
     ext::common::after_login,
     version::{get_version, Protocol},
-    Client, LoginDeviceLocked, LoginNeedCaptcha, LoginResponse, LoginSuccess, LoginUnknownStatus,
+    Client, LoginNeedCaptcha, LoginResponse, LoginSuccess, LoginUnknownStatus,
 };
 use simplelog::*;
 use std::{env, path::Path, sync::Arc, time::Duration};
