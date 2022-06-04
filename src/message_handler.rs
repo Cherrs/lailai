@@ -2,7 +2,7 @@ use crate::config::GROUP_CONF_BYQQ;
 use async_trait::async_trait;
 use chrono::{FixedOffset, TimeZone, Utc};
 use fflogsv1::{extensions::items::GetItemError, FF14};
-use log::{error, info};
+use log::{debug, error, info};
 use ricq::{
     handler::{Handler, QEvent},
     msg::elem::*,
@@ -105,7 +105,7 @@ impl Handler for MyHandler {
                 }
             }
             _ => {
-                info!("{:?}", e);
+                debug!("{:?}", e);
             }
         }
     }

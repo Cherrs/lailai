@@ -8,7 +8,7 @@ mod sledstore;
 mod store;
 use crate::message_handler::MyHandler;
 use config::GROUP_CONF;
-use dialoguer::{console::Term, theme::ColorfulTheme, Password, Select};
+use dialoguer::{console::Term, theme::ColorfulTheme, Input, Password, Select};
 use fflogsv1::FF14;
 use log::{debug, error, info};
 use qrcode::QrCode;
@@ -96,9 +96,9 @@ pub async fn initbot() -> (JoinHandle<()>, Arc<Client>) {
     tokio::task::yield_now().await; // 等一下，确保连上了
     let term = Term::stdout();
     if token.is_none() {
-        term.write_line("登录方式：").unwrap();
         let login_type = vec!["账号密码+短信验证码", "二维码"];
         let selection = Select::with_theme(&ColorfulTheme::default())
+            .with_prompt("选择登录方式")
             .items(&login_type)
             .default(0)
             .interact_on_opt(&term)
@@ -106,11 +106,20 @@ pub async fn initbot() -> (JoinHandle<()>, Arc<Client>) {
             .unwrap();
         match login_type[selection] {
             "账号密码+短信验证码" => {
-                term.write_line("输入QQ号：").unwrap();
-                let qq = term.read_line().unwrap();
-                let qq = qq.parse::<i64>().unwrap();
-                let pwd = Password::new().with_prompt("密码").interact().unwrap();
-                let mut resp = client.password_login(qq, &pwd).await.unwrap();
+                let upwd = QQandPassword {
+                    qq: Input::with_theme(&ColorfulTheme::default())
+                        .with_prompt("QQ号")
+                        .interact()
+                        .unwrap(),
+                    password: Password::with_theme(&ColorfulTheme::default())
+                        .with_prompt("密码")
+                        .interact()
+                        .unwrap(),
+                };
+                let mut resp = client
+                    .password_login(upwd.qq, &upwd.password)
+                    .await
+                    .unwrap();
                 loop {
                     match resp {
                         LoginResponse::Success(LoginSuccess {
@@ -131,12 +140,15 @@ pub async fn initbot() -> (JoinHandle<()>, Arc<Client>) {
                             image_captcha: ref _image_captcha,
                             ..
                         }) => {
-                            term.write_line(&format!("滑块URL: {:?}", verify_url))
+                            term.write_line(&format!(
+                                "滑块URL: {:?}",
+                                verify_url.as_ref().unwrap()
+                            ))
+                            .unwrap();
+                            let ticket: String = Input::with_theme(&ColorfulTheme::default())
+                                .with_prompt("请输入ticket")
+                                .interact()
                                 .unwrap();
-                            term.write_line("请输入ticket:").unwrap();
-                            //let mut reader = FramedRead::new(tokio::io::stdin(), LinesCodec::new());
-                            let mut ticket = String::new();
-                            std::io::stdin().read_line(&mut ticket).unwrap();
                             resp = client
                                 .submit_ticket(&ticket)
                                 .await
@@ -149,15 +161,16 @@ pub async fn initbot() -> (JoinHandle<()>, Arc<Client>) {
                                 .expect("failed to login with device lock");
                         }
                         LoginResponse::TooManySMSRequest => {
-                            let mut code = String::new();
-                            println!("请输入短信验证码");
-                            std::io::stdin().read_line(&mut code).unwrap();
+                            let code: String = Input::with_theme(&ColorfulTheme::default())
+                                .with_prompt("输入短信验证码")
+                                .interact()
+                                .unwrap();
                             resp = client.submit_sms_code(&code).await.unwrap();
                         }
                         LoginResponse::UnknownStatus(LoginUnknownStatus {
                             ref message, ..
                         }) => {
-                            println!("{}", message);
+                            error!("{}", message);
                             std::process::exit(0);
                         }
                         _ => {}
@@ -230,4 +243,9 @@ fn initlog() {
         ColorChoice::Auto,
     )])
     .unwrap();
+}
+
+struct QQandPassword {
+    qq: i64,
+    password: String,
 }
