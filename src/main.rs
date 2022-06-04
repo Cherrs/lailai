@@ -131,8 +131,9 @@ pub async fn initbot() -> (JoinHandle<()>, Arc<Client>) {
                             image_captcha: ref _image_captcha,
                             ..
                         }) => {
-                            info!("滑块URL: {:?}", verify_url);
-                            info!("请输入ticket:");
+                            term.write_line(&format!("滑块URL: {:?}", verify_url))
+                                .unwrap();
+                            term.write_line("请输入ticket:").unwrap();
                             //let mut reader = FramedRead::new(tokio::io::stdin(), LinesCodec::new());
                             let mut ticket = String::new();
                             std::io::stdin().read_line(&mut ticket).unwrap();
