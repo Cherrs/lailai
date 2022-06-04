@@ -54,12 +54,19 @@ group_config.yaml
   group: 
     - id: {群号1}
     - id: {群号2}
+```
+
+例：
+
+``` yaml
 - qq: 694638502
   name: Iker
   server: 琥珀原
   group: 
    - id: 136610715
 ```
+
+程序会检索Iker的数据，如有变化发送到群136610715，如果QQ号：694638502在群里会自动At
 
 ## 实时发送logs数据到群
 
