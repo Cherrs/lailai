@@ -10,7 +10,7 @@ use crate::message_handler::MyHandler;
 use config::GROUP_CONF;
 use dialoguer::{console::Term, theme::ColorfulTheme, Password, Select};
 use fflogsv1::FF14;
-use log::{error, info};
+use log::{debug, error, info};
 use qrcode::QrCode;
 use ricq::{
     client::Token,
@@ -42,7 +42,7 @@ pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .unwrap_or_else(|_| "60".to_string())
                     .parse::<u64>()
                     .unwrap();
-                println!("{}", interval);
+                debug!("{}秒后重新查询", interval);
                 tokio::time::sleep(Duration::from_secs(interval)).await;
             }
         });
