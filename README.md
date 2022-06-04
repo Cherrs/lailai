@@ -1,5 +1,7 @@
 # Lailai
 
+[![build](https://github.com/Cherrs/Lailai/actions/workflows/rust.yml/badge.svg?branch=master)](https://github.com/Cherrs/Lailai/actions/workflows/rust.yml)
+
 基于 ricq 开发的 FF14 开箱即用机器人
 
 不需要任何麻烦的配置
