@@ -8,15 +8,16 @@ mod sledstore;
 mod store;
 use crate::message_handler::MyHandler;
 use config::GROUP_CONF;
+use dialoguer::{console::Term, theme::ColorfulTheme, Password, Select};
 use fflogsv1::FF14;
-use log::error;
+use log::{error, info};
 use qrcode::QrCode;
 use ricq::{
     client::Token,
     device::Device,
     ext::common::after_login,
     version::{get_version, Protocol},
-    Client,
+    Client, LoginNeedCaptcha, LoginResponse, LoginSuccess, LoginUnknownStatus,
 };
 use simplelog::*;
 use std::{env, path::Path, sync::Arc, time::Duration};
@@ -93,30 +94,100 @@ pub async fn initbot() -> (JoinHandle<()>, Arc<Client>) {
     let c = client.clone();
     let handle = tokio::spawn(async move { c.start(stream).await });
     tokio::task::yield_now().await; // 等一下，确保连上了
+    let term = Term::stdout();
     if token.is_none() {
-        let resp = client.fetch_qrcode().await.expect("failed to fetch qrcode");
-        use ricq::ext::login::auto_query_qrcode;
-        match resp {
-            //登录二维码展示
-            ricq::QRCodeState::ImageFetch(x) => {
-                let img = image::load_from_memory(&x.image_data).unwrap();
-                let decoder = bardecoder::default_decoder();
-                let results = decoder.decode(&img);
-                let qrstr = results[0].as_ref().unwrap();
-                let code = QrCode::new(qrstr).unwrap();
-                let image = code
-                    .render::<char>()
-                    .quiet_zone(false)
-                    .module_dimensions(2, 1)
-                    .build();
-                println!("{}", image);
-                if let Err(err) = auto_query_qrcode(&client, &x.sig).await {
-                    panic!("登录失败 {}", err)
-                };
+        term.write_line("登录方式：").unwrap();
+        let login_type = vec!["账号密码+短信验证码", "二维码"];
+        let selection = Select::with_theme(&ColorfulTheme::default())
+            .items(&login_type)
+            .default(0)
+            .interact_on_opt(&term)
+            .unwrap()
+            .unwrap();
+        match login_type[selection] {
+            "账号密码+短信验证码" => {
+                term.write_line("输入QQ号：").unwrap();
+                let qq = term.read_line().unwrap();
+                let qq = qq.parse::<i64>().unwrap();
+                let pwd = Password::new().with_prompt("密码").interact().unwrap();
+                let mut resp = client.password_login(qq, &pwd).await.unwrap();
+                loop {
+                    match resp {
+                        LoginResponse::Success(LoginSuccess {
+                            ref account_info, ..
+                        }) => {
+                            info!("login success: {:?}", account_info);
+                            break;
+                        }
+                        LoginResponse::DeviceLocked(x) => {
+                            println!("{:?}", x);
+                            resp = client.request_sms().await.expect("failed to request sms");
+                        }
+                        LoginResponse::NeedCaptcha(LoginNeedCaptcha {
+                            ref verify_url,
+                            // 图片应该没了
+                            image_captcha: ref _image_captcha,
+                            ..
+                        }) => {
+                            info!("滑块URL: {:?}", verify_url);
+                            info!("请输入ticket:");
+                            //let mut reader = FramedRead::new(tokio::io::stdin(), LinesCodec::new());
+                            let mut ticket = String::new();
+                            std::io::stdin().read_line(&mut ticket).unwrap();
+                            resp = client
+                                .submit_ticket(&ticket)
+                                .await
+                                .expect("failed to submit ticket");
+                        }
+                        LoginResponse::DeviceLockLogin { .. } => {
+                            resp = client
+                                .device_lock_login()
+                                .await
+                                .expect("failed to login with device lock");
+                        }
+                        LoginResponse::TooManySMSRequest => {
+                            let mut code = String::new();
+                            println!("请输入短信验证码");
+                            std::io::stdin().read_line(&mut code).unwrap();
+                            resp = client.submit_sms_code(&code).await.unwrap();
+                        }
+                        LoginResponse::UnknownStatus(LoginUnknownStatus {
+                            ref message, ..
+                        }) => {
+                            println!("{}", message);
+                            std::process::exit(0);
+                        }
+                        _ => {}
+                    }
+                }
             }
-            _ => {
-                panic!("resp error")
+            "二维码" => {
+                let resp = client.fetch_qrcode().await.expect("failed to fetch qrcode");
+                use ricq::ext::login::auto_query_qrcode;
+                match resp {
+                    //登录二维码展示
+                    ricq::QRCodeState::ImageFetch(x) => {
+                        let img = image::load_from_memory(&x.image_data).unwrap();
+                        let decoder = bardecoder::default_decoder();
+                        let results = decoder.decode(&img);
+                        let qrstr = results[0].as_ref().unwrap();
+                        let code = QrCode::new(qrstr).unwrap();
+                        let image = code
+                            .render::<char>()
+                            .quiet_zone(false)
+                            .module_dimensions(2, 1)
+                            .build();
+                        println!("{}", image);
+                        if let Err(err) = auto_query_qrcode(&client, &x.sig).await {
+                            panic!("登录失败 {}", err)
+                        };
+                    }
+                    _ => {
+                        panic!("resp error")
+                    }
+                }
             }
+            _ => {}
         }
     } else {
         client.token_login(token.unwrap()).await.unwrap();
