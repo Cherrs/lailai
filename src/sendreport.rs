@@ -38,8 +38,9 @@ pub async fn trysendmessageorinit(client: &Client) -> Result<(), Box<dyn std::er
 
     let parses_futures = try_join_all(parses_futures).await?;
     let mut parses_map: HashMap<i64, Vec<Parses>> = HashMap::new();
-    //筛选近一天的数据
-    let utc: DateTime<Utc> = Utc::now() - Duration::days(30);
+    //筛选数据
+    let utc: DateTime<Utc> =
+        Utc::now() - Duration::days(env::var("historydays").unwrap().parse::<i64>().unwrap());
     let utcstamp = utc.timestamp_millis();
 
     //转换hashmap
