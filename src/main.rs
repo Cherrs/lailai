@@ -17,7 +17,7 @@ use ricq::{
     device::Device,
     ext::common::after_login,
     version::{get_version, Protocol},
-    Client, LoginNeedCaptcha, LoginResponse, LoginSuccess, LoginUnknownStatus,
+    Client, LoginDeviceLocked, LoginNeedCaptcha, LoginResponse, LoginSuccess, LoginUnknownStatus,
 };
 use simplelog::*;
 use std::{env, path::Path, sync::Arc, time::Duration};
@@ -120,7 +120,9 @@ pub async fn initbot() -> (JoinHandle<()>, Arc<Client>) {
                             break;
                         }
                         LoginResponse::DeviceLocked(x) => {
-                            println!("{:?}", x);
+                            if let Some(message) = x.message {
+                                info!("{}", message);
+                            }
                             resp = client.request_sms().await.expect("failed to request sms");
                         }
                         LoginResponse::NeedCaptcha(LoginNeedCaptcha {
