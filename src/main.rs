@@ -30,22 +30,19 @@ pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
     initlog();
     let (handle, client) = initbot().await;
     if GROUP_CONF.get().is_some() {
-        let cli = client.clone();
-        tokio::spawn(async move {
-            loop {
-                //获取logs数据，检测更新发送到群
-                match sendreport::trysendmessageorinit(&cli).await {
-                    Ok(_) => {}
-                    Err(e) => error!("{:?}", e),
-                }
-                let interval = env::var("interval")
-                    .unwrap_or_else(|_| "60".to_string())
-                    .parse::<u64>()
-                    .unwrap();
-                debug!("{}秒后重新查询", interval);
-                tokio::time::sleep(Duration::from_secs(interval)).await;
+        loop {
+            //获取logs数据，检测更新发送到群
+            match sendreport::trysendmessageorinit(&client).await {
+                Ok(_) => {}
+                Err(e) => error!("{:?}", e),
             }
-        });
+            let interval = env::var("interval")
+                .unwrap_or_else(|_| "60".to_string())
+                .parse::<u64>()
+                .unwrap();
+            debug!("{}秒后重新查询", interval);
+            tokio::time::sleep(Duration::from_secs(interval)).await;
+        }
     }
 
     handle.await.unwrap();
