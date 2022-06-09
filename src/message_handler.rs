@@ -71,7 +71,7 @@ impl Handler for MyHandler {
                     m.message.from_uin, m.message.elements
                 );
             }
-            QEvent::TempMessage(m) => {
+            QEvent::GroupTempMessage(m) => {
                 info!(
                     "MESSAGE (TEMP={}): {}",
                     m.message.from_uin, m.message.elements
