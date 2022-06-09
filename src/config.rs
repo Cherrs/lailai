@@ -110,3 +110,10 @@ async fn get_config_file() -> Option<Vec<Configoption>> {
         None
     }
 }
+
+#[tokio::test]
+async fn test() {
+    init().await;
+    let g = GROUP_CONF.get().unwrap();
+    println!("{:?}", g);
+}
