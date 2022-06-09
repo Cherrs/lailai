@@ -1,0 +1,56 @@
+name: publish
+
+on:
+  push:
+      tags:
+        - "*.*.*"
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+    - id: get_version
+      uses: battila7/get-version-action@v2
+    - uses: actions/checkout@v3
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: nightly
+        override: true
+    - name: build x86_64-pc-windows-msvc
+      run: cargo build --release --verbose --target x86_64-pc-windows-msvc
+    - run: cp target/x86_64-pc-windows-msvc/release/lailai.exe lailai-${{ steps.get_version.outputs.VERSION }}-win-x64.exe
+    - name: Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ steps.get_version.outputs.VERSION }}
+        prerelease: false
+        files: lailai-${{ steps.get_version.outputs.VERSION }}-win-x64.exe
+        generate_release_notes: true
+        name: master
+  build-linux:
+    runs-on: ubuntu-latest
+
+    steps:
+    - id: get_version
+      uses: battila7/get-version-action@v2
+    - uses: actions/checkout@v3
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: nightly
+        override: true
+    - name: build x86_64-unknown-linux-gnu
+      run: cargo build --release --verbose --target x86_64-unknown-linux-gnu
+    - run: strip target/x86_64-unknown-linux-gnu/release/lailai
+    - run: cp target/x86_64-unknown-linux-gnu/release/lailai lailai-${{ steps.get_version.outputs.VERSION }}-linux-x64-gnu
+    - name: Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ steps.get_version.outputs.VERSION }}
+        prerelease: false
+        files: lailai-${{ steps.get_version.outputs.VERSION }}-linux-x64-gnu
+        generate_release_notes: true
+        name: master
