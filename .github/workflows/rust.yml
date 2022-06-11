@@ -47,6 +47,11 @@ jobs:
         generate_release_notes: true
         name: master
   build-linux:
+    strategy:
+      matrix:
+        target: 
+          - x86_64-unknown-linux-gnu
+          - x86_64-unknown-linux-musl
     runs-on: ubuntu-latest
 
     steps:
@@ -56,17 +61,19 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: nightly
+        target: ${{ matrix.target }}
         override: true
-    - name: build x86_64-unknown-linux-gnu
-      run: cargo build --release --verbose --target x86_64-unknown-linux-gnu
-    - run: strip target/x86_64-unknown-linux-gnu/release/lailai
-    - run: cp target/x86_64-unknown-linux-gnu/release/lailai lailai-${{ steps.get_version.outputs.VERSION }}-linux-x86_64-gnu
+    - run: sudo apt-get install musl-tools
+    - name: build ${{ matrix.target }}
+      run: cargo build --release --verbose --target ${{ matrix.target }}
+    - run: strip target/${{ matrix.target }}/release/lailai
+    - run: cp target/${{ matrix.target }}/release/lailai lailai-${{ steps.get_version.outputs.VERSION }}-${{ matrix.target }}
     - name: Release
       uses: softprops/action-gh-release@v1
       with:
         tag_name: latest
         prerelease: true
-        files: lailai-${{ steps.get_version.outputs.VERSION }}-linux-x86_64-gnu
+        files: lailai-${{ steps.get_version.outputs.VERSION }}-${{ matrix.target }}
         generate_release_notes: true
         name: master
   build-mac:
