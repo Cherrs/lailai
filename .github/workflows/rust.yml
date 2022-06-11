@@ -2,7 +2,15 @@ name: build
 
 on:
   push:
-
+    branches:
+      - master
+  workflow_call:
+    inputs:
+      username:
+        description: 'A username passed from the caller workflow'
+        default: 'john-doe'
+        required: false
+        type: string
 env:
   CARGO_TERM_COLOR: always
 
@@ -18,15 +26,24 @@ jobs:
       with:
         toolchain: nightly
         override: true
+    - uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          target/
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
     - name: build x86_64-pc-windows-msvc
       run: cargo build --release --verbose --target x86_64-pc-windows-msvc
-    - run: cp target/x86_64-pc-windows-msvc/release/lailai.exe lailai-${{ steps.get_version.outputs.VERSION }}-win-x64.exe
+    - run: cp target/x86_64-pc-windows-msvc/release/lailai.exe lailai-${{ steps.get_version.outputs.VERSION }}-win-x86_64.exe
     - name: Release
       uses: softprops/action-gh-release@v1
       with:
         tag_name: latest
         prerelease: true
-        files: lailai-${{ steps.get_version.outputs.VERSION }}-win-x64.exe
+        files: lailai-${{ steps.get_version.outputs.VERSION }}-win-x86_64.exe
         generate_release_notes: true
         name: master
   build-linux:
@@ -43,12 +60,41 @@ jobs:
     - name: build x86_64-unknown-linux-gnu
       run: cargo build --release --verbose --target x86_64-unknown-linux-gnu
     - run: strip target/x86_64-unknown-linux-gnu/release/lailai
-    - run: cp target/x86_64-unknown-linux-gnu/release/lailai lailai-${{ steps.get_version.outputs.VERSION }}-linux-x64-gnu
+    - run: cp target/x86_64-unknown-linux-gnu/release/lailai lailai-${{ steps.get_version.outputs.VERSION }}-linux-x86_64-gnu
     - name: Release
       uses: softprops/action-gh-release@v1
       with:
         tag_name: latest
         prerelease: true
-        files: lailai-${{ steps.get_version.outputs.VERSION }}-linux-x64-gnu
+        files: lailai-${{ steps.get_version.outputs.VERSION }}-linux-x86_64-gnu
+        generate_release_notes: true
+        name: master
+  build-mac:
+    strategy:
+      matrix:
+        target: 
+          - aarch64-apple-darwin
+          - x86_64-apple-darwin
+    runs-on: macos-latest
+
+    steps:
+    - id: get_version
+      uses: battila7/get-version-action@v2
+    - uses: actions/checkout@v3
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: nightly
+        target: ${{ matrix.target }}
+        override: true
+    - name: build ${{ matrix.target }}
+      run: cargo build --release --verbose --target ${{ matrix.target }}
+    - run: strip target/${{ matrix.target }}/release/lailai
+    - run: cp target/${{ matrix.target }}/release/lailai lailai-${{ steps.get_version.outputs.VERSION }}-${{ matrix.target }}
+    - name: Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: latest
+        prerelease: true
+        files: lailai-${{ steps.get_version.outputs.VERSION }}-${{ matrix.target }}
         generate_release_notes: true
         name: master
