@@ -78,7 +78,7 @@ pub async fn init() {
             })
             .await;
     }
-    match fs::read_to_string("config.yaml").await {
+    match fs::read_to_string("config/config.yaml").await {
         Ok(f) => match serde_yaml::from_str(&f) {
             Ok(x) => {
                 let con: BTreeMap<String, String> = x;
@@ -99,7 +99,7 @@ pub async fn init() {
 }
 
 async fn get_config_file() -> Option<Vec<Configoption>> {
-    let mut path = "group_config.yaml";
+    let mut path = "config/group_config.yaml";
     if let Ok(t) = std::fs::try_exists("group_config.dev.yaml") && t {
         path = "group_config.dev.yaml";
     }

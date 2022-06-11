@@ -29,19 +29,24 @@ pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
     config::init().await;
     initlog();
     let (handle, client) = initbot().await;
-    if GROUP_CONF.get().is_some() {
-        loop {
-            //获取logs数据，检测更新发送到群
-            match sendreport::trysendmessageorinit(&client).await {
-                Ok(_) => {}
-                Err(e) => error!("{:?}", e),
+    match GROUP_CONF.get() {
+        Some(_) => {
+            loop {
+                //获取logs数据，检测更新发送到群
+                match sendreport::trysendmessageorinit(&client).await {
+                    Ok(_) => {}
+                    Err(e) => error!("{:?}", e),
+                }
+                let interval = env::var("interval")
+                    .unwrap_or_else(|_| "60".to_string())
+                    .parse::<u64>()
+                    .unwrap();
+                debug!("{}秒后重新查询", interval);
+                tokio::time::sleep(Duration::from_secs(interval)).await;
             }
-            let interval = env::var("interval")
-                .unwrap_or_else(|_| "60".to_string())
-                .parse::<u64>()
-                .unwrap();
-            debug!("{}秒后重新查询", interval);
-            tokio::time::sleep(Duration::from_secs(interval)).await;
+        }
+        None => {
+            info!("没有读取到群配置，禁用logs警察功能");
         }
     }
 
@@ -50,9 +55,9 @@ pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ///初始化机器人
 pub async fn initbot() -> (JoinHandle<()>, Arc<Client>) {
-    let device = match Path::new("device.json").exists() {
+    let device = match Path::new("config/device.json").exists() {
         true => serde_json::from_str(
-            &tokio::fs::read_to_string("device.json")
+            &tokio::fs::read_to_string("config/device.json")
                 .await
                 .expect("failed to read device.json"),
         )
@@ -60,7 +65,7 @@ pub async fn initbot() -> (JoinHandle<()>, Arc<Client>) {
         false => {
             let d = Device::random();
             tokio::fs::write(
-                "device.json",
+                "config/device.json",
                 serde_json::to_string(&d).expect("device.json写入失败，请检查权限"),
             )
             .await
@@ -68,9 +73,9 @@ pub async fn initbot() -> (JoinHandle<()>, Arc<Client>) {
             d
         }
     };
-    let token: Option<Token> = match Path::new("session.key").exists() {
+    let token: Option<Token> = match Path::new("config/session.key").exists() {
         true => serde_json::from_str(
-            &tokio::fs::read_to_string("session.key")
+            &tokio::fs::read_to_string("config/session.key")
                 .await
                 .expect("无法读取session.key，请检查权限"),
         )
@@ -210,7 +215,7 @@ pub async fn initbot() -> (JoinHandle<()>, Arc<Client>) {
     {
         let token = client.gen_token().await;
         let tokenstr = serde_json::to_vec(&token).unwrap();
-        tokio::fs::write("session.key", tokenstr)
+        tokio::fs::write("config/session.key", tokenstr)
             .await
             .expect("无法写入session.key，请检查");
     }

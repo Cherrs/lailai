@@ -7,3 +7,4 @@ target/
 group_config.dev.yaml
 db/
 group_config.yaml
+config/

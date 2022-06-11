@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 #异步
-tokio = { version = "1", features = ["full"] }
+tokio = "1"
 async-trait = "0.1"
 futures = "0.3"
 

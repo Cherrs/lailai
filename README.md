@@ -17,8 +17,9 @@
 
 ## 配置
 
-- Lailai会优先使用当前目录下config.yaml文件的配置
-- 如果config.yaml文件不存在则使用环境变量
+- 所有配置文件放在`config`目录下
+- Lailai会优先使用`config/config.yaml`文件的配置
+- 如果`config/config.yaml`文件不存在则使用环境变量
 - 如果都没有配置则禁用logs相关功能
 
 ### 基础配置
