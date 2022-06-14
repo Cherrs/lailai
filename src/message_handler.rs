@@ -1,7 +1,7 @@
 use crate::config::GROUP_CONF_BYQQ;
 use async_trait::async_trait;
 use chrono::{FixedOffset, TimeZone, Utc};
-use fflogsv1::{extensions::items::GetItemError, FF14};
+use fflogsv1::{FFError, FF14};
 use log::{debug, error, info};
 use ricq::{
     handler::{Handler, QEvent},
@@ -158,7 +158,7 @@ async fn send_item_data_to_group(
         Err(err) => {
             let errmsg = format!("获取物品失败,{}", err);
             error!("{}", errmsg);
-            if let GetItemError::ItemNotFoundError = err {
+            if let FFError::ItemNotFound = err {
                 msg.push(Text::new(format!("😒什么是 {} ?", item_name)));
             }
             return msg;

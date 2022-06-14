@@ -1,16 +1,15 @@
 use futures::future::try_join_all;
-use log::error;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_json::Value;
-use thiserror::Error;
 
+use crate::FFError;
 use crate::FF14;
 
 impl FF14 {
     ///#### 搜索物品，获取搜索到的第一个物品在猫小胖服务器的价格
     /// 目前这个方法只支持猫小胖🤣🤣🤣
-    pub async fn get_item_price(&self, name: &str) -> Result<ItemsPrice, GetItemPriceError> {
+    pub async fn get_item_price(&self, name: &str) -> Result<ItemsPrice, FFError> {
         let server_list = vec![
             "紫水栈桥",
             "摩杜纳",
@@ -59,7 +58,7 @@ impl FF14 {
         &self,
         server_name: &str,
         item_id: i32,
-    ) -> Result<ItemPriceResult, GetItemPriceError> {
+    ) -> Result<ItemPriceResult, FFError> {
         let item_price = self
             .client
             .get(format!(
@@ -169,15 +168,4 @@ pub struct ItemsPriceList {
     pub seller_name: String,
     pub server_name: String,
     pub last_update_time: i64,
-}
-#[derive(Debug, Error)]
-pub enum GetItemPriceError {
-    #[error("查询物品价格错误！")]
-    GetPriceError,
-    #[error("🙃请求查询接口错误,{0}")]
-    ReqwestError(#[from] reqwest::Error),
-    #[error("🤔{0}")]
-    GetItemError(#[from] super::items::GetItemError),
-    #[error(transparent)]
-    Other(#[from] Box<dyn std::error::Error>),
 }

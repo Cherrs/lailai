@@ -2,13 +2,13 @@ use futures::future::try_join_all;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_json::Value;
-use thiserror::Error;
 
+use crate::FFError;
 use crate::FF14;
 
 impl FF14 {
     ///从wakingsands搜索物品
-    pub async fn get_items(&self, name: &str) -> Result<Vec<Item>, GetItemError> {
+    pub async fn get_items(&self, name: &str) -> Result<Vec<Item>, FFError> {
         let result:ItemsResult= self.client.get("https://cafemaker.wakingsands.com/search?string_algo=multi_match&limit=6&indexes=Item")
         .query(&[("string",name)])
         .send()
@@ -21,12 +21,12 @@ impl FF14 {
         }
         let result = try_join_all(f).await?;
         if result.is_empty() {
-            return Err(GetItemError::ItemNotFoundError);
+            return Err(FFError::ItemNotFound);
         }
         Ok(result)
     }
     ///从wakingsands搜索物品
-    pub async fn get_first_item(&self, name: &str) -> Result<Item, GetItemError> {
+    pub async fn get_first_item(&self, name: &str) -> Result<Item, FFError> {
         let result:ItemsResult= self.client.get("https://cafemaker.wakingsands.com/search?string_algo=multi_match&limit=6&indexes=Item")
             .query(&[("string",name)])
             .send()
@@ -36,10 +36,10 @@ impl FF14 {
         let first_item = result.results.first();
         match first_item {
             Some(first_item) => Ok(self.get_icon(first_item.clone()).await?),
-            None => Err(GetItemError::ItemNotFoundError),
+            None => Err(FFError::ItemNotFound),
         }
     }
-    async fn get_icon(&self, item: WResult) -> Result<Item, GetItemError> {
+    async fn get_icon(&self, item: WResult) -> Result<Item, FFError> {
         let result = self
             .client
             .get(format!("{}{}", "https://xivapi.com", item.icon))
@@ -117,14 +117,4 @@ pub struct Item {
     pub id: i32,
     pub name: String,
     pub icon: Vec<u8>,
-}
-
-#[derive(Debug, Error)]
-pub enum GetItemError {
-    #[error("😒没有找到物品")]
-    ItemNotFoundError,
-    #[error("🙃请求查询接口错误,{0}")]
-    ReqwestError(#[from] reqwest::Error),
-    #[error(transparent)]
-    Other(#[from] Box<dyn std::error::Error>),
 }
