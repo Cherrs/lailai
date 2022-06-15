@@ -4,13 +4,6 @@ on:
   push:
     branches:
       - master
-  workflow_call:
-    inputs:
-      username:
-        description: 'A username passed from the caller workflow'
-        default: 'john-doe'
-        required: false
-        type: string
 env:
   CARGO_TERM_COLOR: always
 
@@ -26,15 +19,6 @@ jobs:
       with:
         toolchain: nightly
         override: true
-    - uses: actions/cache@v3
-      with:
-        path: |
-          ~/.cargo/bin/
-          ~/.cargo/registry/index/
-          ~/.cargo/registry/cache/
-          ~/.cargo/git/db/
-          target/
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
     - name: build x86_64-pc-windows-msvc
       run: cargo build --release --verbose --target x86_64-pc-windows-msvc
     - run: cp target/x86_64-pc-windows-msvc/release/lailai.exe lailai-${{ steps.get_version.outputs.VERSION }}-win-x86_64.exe
