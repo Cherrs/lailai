@@ -31,7 +31,7 @@
 - 所有配置文件放在`config`目录下
 - Lailai会优先使用`config/config.yaml`文件的配置
 - 如果`config/config.yaml`文件不存在则使用环境变量
-- 如果都没有配置则禁用logs相关功能
+- 如果都没有配置则禁用fflogs相关功能
 
 ### 基础配置
 
@@ -46,13 +46,13 @@ localpath: db/cache
 historydays: 1
 ```
 
-- `store` 使用哪一种缓存
+- `store` 使用哪一种缓存，默认local
   - `local` 使用[sled](https://github.com/spacejam/sled)的本地存储
   - `postgres` 使用postgresql，创建脚本在sql文件夹下
 - `rsconstr` postgresql数据库配置
 - `logskey` fflogs的V1 Client Key
-- `interval` 重试间隔，单位是秒
-- `localpath` 本地存储位置，默认当前目录`db/cache`
+- `interval` 重试间隔，单位是秒，默认60
+- `localpath` 本地存储位置，默认`db/cache`
 - `historydays` 通报的历史天数，默认为1，1天前的数据不会通报
 
 ### 配置群消息
@@ -80,7 +80,7 @@ group_config.yaml
 
 Lailai会检索Iker在logs上的数据，如有更新并且击杀时间`historydays`之后会发送到群136610715，如果配置的QQ号：694638502在群里会自动At
 
-## 实时发送logs数据到群
+## fflogs警察 实时发送logs数据到群
 
 - 从<https://www.fflogs.com/>获取数据
 - 如果发送的玩家在群会自动at
