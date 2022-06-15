@@ -25,9 +25,10 @@ jobs:
     - name: Release
       uses: softprops/action-gh-release@v1
       with:
+        tag_name: latest
         prerelease: true
         files: lailai-${{ steps.get_version.outputs.VERSION }}-win-x86_64.exe
-        generate_release_notes: true
+        generate_release_notes: false
         name: master
   build-linux:
     strategy:
@@ -54,9 +55,10 @@ jobs:
     - name: Release
       uses: softprops/action-gh-release@v1
       with:
+        tag_name: latest
         prerelease: true
         files: lailai-${{ steps.get_version.outputs.VERSION }}-${{ matrix.target }}
-        generate_release_notes: true
+        generate_release_notes: false
         name: master
   build-mac:
     strategy:
@@ -82,7 +84,8 @@ jobs:
     - name: Release
       uses: softprops/action-gh-release@v1
       with:
+        tag_name: latest
         prerelease: true
         files: lailai-${{ steps.get_version.outputs.VERSION }}-${{ matrix.target }}
-        generate_release_notes: true
+        generate_release_notes: false
         name: master
