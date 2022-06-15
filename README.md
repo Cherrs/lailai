@@ -2,9 +2,9 @@
 
 [![build](https://github.com/Cherrs/Lailai/actions/workflows/rust.yml/badge.svg?branch=master)](https://github.com/Cherrs/Lailai/actions/workflows/rust.yml)
 
-基于 ricq 开发的 FF14 开箱即用机器人
+- 基于 ricq 开发的 FF14 开箱即用机器人
 
-不需要任何麻烦的配置
+- 不需要任何麻烦的配置
 
 支持的存储:
 
@@ -14,6 +14,17 @@
 - [ ] ~~leveldb~~
 
 开发环境：rust nightly
+
+## 使用Lailai
+
+到[Release](https://github.com/Cherrs/lailai/releases)下载对应平台的可执行文件
+
+1. 打开后选择二维码登录。
+2. 确保登录qq和扫码设备在同一网络下
+3. 扫码
+
+> - 账号密码登录需要滑块ticket，建议扫描二维码登录
+> - 没有配置`group_config.yaml`默认不启用查询logs
 
 ## 配置
 
@@ -41,7 +52,7 @@ historydays: 1
 - `rsconstr` postgresql数据库配置
 - `logskey` fflogs的V1 Client Key
 - `interval` 重试间隔，单位是秒
-- `localpath` 本地存储位置，默认db/cache
+- `localpath` 本地存储位置，默认当前目录`db/cache`
 - `historydays` 通报的历史天数，默认为1，1天前的数据不会通报
 
 ### 配置群消息
@@ -67,7 +78,7 @@ group_config.yaml
    - id: 136610715
 ```
 
-程序会检索Iker的数据，如有变化发送到群136610715，如果QQ号：694638502在群里会自动At
+Lailai会检索Iker在logs上的数据，如有更新并且击杀时间`historydays`之后会发送到群136610715，如果配置的QQ号：694638502在群里会自动At
 
 ## 实时发送logs数据到群
 
@@ -92,6 +103,8 @@ group_config.yaml
 ### 查询自己的logs
 
 `@小警察卸坤`
+
+- 此功能需要在`group_config.yaml`里配置qq号，角色名，服务器
 
 ![查询logs](README/high.png)
 
