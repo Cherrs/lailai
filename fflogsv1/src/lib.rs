@@ -24,31 +24,6 @@ impl FF14 {
             url: String::from("https://cn.fflogs.com:443/v1"),
         }
     }
-    async fn parse_response<T: DeserializeOwned>(response: Response) -> Result<T, FFError> {
-        match response.status() {
-            StatusCode::OK => {
-                let rspbytes = response.bytes().await?;
-                let response = serde_json::from_slice(&rspbytes);
-                //反序列化不成功输出错误body
-                let response = match response {
-                    Ok(n) => n,
-                    Err(e) => {
-                        error!("错误的body: {}", String::from_utf8_lossy(&rspbytes));
-                        return Err(FFError::SerializeError(e));
-                    }
-                };
-                Ok(response)
-            }
-            _ => {
-                let rspbytes = response.bytes().await?;
-                let response = serde_json::from_slice::<FFLogsv1ErrorBody>(&rspbytes)?;
-                Err(FFError::FFLogsv1Error(format!(
-                    "{}:{}",
-                    response.status, response.error
-                )))
-            }
-        }
-    }
     pub fn new_withclient(api_key: &str, client: reqwest::Client) -> FF14 {
         FF14 {
             api_key: String::from(api_key),
@@ -78,7 +53,7 @@ impl FF14 {
             build = build.query(&[("zone", zone.expect("获取character_parses的zone为空"))]);
         }
         let rsp = build.send().await?;
-        let rsp = FF14::parse_response::<Vec<Parses>>(rsp).await;
+        let rsp = parse_response::<Vec<Parses>>(rsp).await;
         info!("获取 {} ✅", character_name);
         rsp
     }
@@ -93,7 +68,7 @@ impl FF14 {
             .query(&[("translate", "true")])
             .send()
             .await?;
-        FF14::parse_response::<Fights>(rsp).await
+        parse_response::<Fights>(rsp).await
     }
     pub async fn tables_report(&self, code: &str, start: i32, end: i32) -> Result<Tables, FFError> {
         let rsp = self
@@ -106,7 +81,7 @@ impl FF14 {
             .query(&[("start", start), ("end", end)])
             .send()
             .await?;
-        FF14::parse_response::<Tables>(rsp).await
+        parse_response::<Tables>(rsp).await
     }
     ///获取一场战斗的死亡记录
     pub async fn tables_report_deaths(
@@ -126,9 +101,36 @@ impl FF14 {
             .query(&[("end", end)])
             .send()
             .await?;
-        FF14::parse_response::<DeathTables>(rsp).await
+        parse_response::<DeathTables>(rsp).await
     }
 }
+
+async fn parse_response<T: DeserializeOwned>(response: Response) -> Result<T, FFError> {
+    match response.status() {
+        StatusCode::OK => {
+            let rspbytes = response.bytes().await?;
+            let response = serde_json::from_slice(&rspbytes);
+            //反序列化不成功输出错误body
+            let response = match response {
+                Ok(n) => n,
+                Err(e) => {
+                    error!("解析json错误，body: {}", String::from_utf8_lossy(&rspbytes));
+                    return Err(FFError::SerializeError(e));
+                }
+            };
+            Ok(response)
+        }
+        _ => {
+            let rspbytes = response.bytes().await?;
+            let response = serde_json::from_slice::<FFLogsv1ErrorBody>(&rspbytes)?;
+            Err(FFError::FFLogsv1Error(format!(
+                "{}:{}",
+                response.status, response.error
+            )))
+        }
+    }
+}
+
 #[derive(Deserialize, Debug)]
 struct FFLogsv1ErrorBody {
     status: u16,
@@ -139,6 +141,10 @@ struct FFLogsv1ErrorBody {
 pub enum FFError {
     #[error("🙃请求fflogs错误,{0}")]
     FFLogsv1Error(String),
+    #[error("🙃请求物品价格错误,{0}")]
+    ItemPrice(String),
+    #[error("🙃搜索物品错误,{0}")]
+    ItemSearch(String),
     #[error("🙃请求接口异常,{0}")]
     ReqwestError(#[from] reqwest::Error),
     #[error("🙃序列化失败,{0}")]

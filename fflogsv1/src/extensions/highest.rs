@@ -1,4 +1,4 @@
-use crate::FF14;
+use crate::{FFError, FF14};
 
 impl FF14 {
     pub async fn get_highest(
@@ -6,7 +6,7 @@ impl FF14 {
         character_name: &str,
         server_name: &str,
         server_region: &str,
-    ) -> Result<Vec<GetHighestDataDto>, Box<dyn std::error::Error>> {
+    ) -> Result<Vec<GetHighestDataDto>, FFError> {
         let mut data = self
             .character_parses(
                 character_name,

@@ -1,4 +1,8 @@
 use futures::future::try_join_all;
+use log::error;
+use reqwest::Response;
+use reqwest::StatusCode;
+use serde::de::DeserializeOwned;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_json::Value;
@@ -9,12 +13,11 @@ use crate::FF14;
 impl FF14 {
     ///从wakingsands搜索物品
     pub async fn get_items(&self, name: &str) -> Result<Vec<Item>, FFError> {
-        let result:ItemsResult= self.client.get("https://cafemaker.wakingsands.com/search?string_algo=multi_match&limit=6&indexes=Item")
+        let result= self.client.get("https://cafemaker.wakingsands.com/search?string_algo=multi_match&limit=6&indexes=Item")
         .query(&[("string",name)])
         .send()
-        .await?
-        .json()
         .await?;
+        let result = parse_response::<ItemsResult>(result).await?;
         let mut f = Vec::new();
         for i in result.results {
             f.push(self.get_icon(i));
@@ -27,12 +30,11 @@ impl FF14 {
     }
     ///从wakingsands搜索物品
     pub async fn get_first_item(&self, name: &str) -> Result<Item, FFError> {
-        let result:ItemsResult= self.client.get("https://cafemaker.wakingsands.com/search?string_algo=multi_match&limit=6&indexes=Item")
+        let result= self.client.get("https://cafemaker.wakingsands.com/search?string_algo=multi_match&limit=6&indexes=Item")
             .query(&[("string",name)])
             .send()
-            .await?
-            .json()
             .await?;
+        let result = parse_response::<ItemsResult>(result).await?;
         let first_item = result.results.first();
         match first_item {
             Some(first_item) => Ok(self.get_icon(first_item.clone()).await?),
@@ -53,6 +55,35 @@ impl FF14 {
             id: item.id,
             name: item.name.clone(),
         })
+    }
+}
+
+async fn parse_response<T: DeserializeOwned>(response: Response) -> Result<T, FFError> {
+    match response.status() {
+        StatusCode::OK => {
+            let rspbytes = response.bytes().await?;
+            let response = serde_json::from_slice(&rspbytes);
+            //反序列化不成功输出错误body
+            let response = match response {
+                Ok(n) => n,
+                Err(e) => {
+                    error!("解析json错误，body: {}", String::from_utf8_lossy(&rspbytes));
+                    return Err(FFError::SerializeError(e));
+                }
+            };
+            Ok(response)
+        }
+        //TODO:解析cafemaker.wakingsands.com api 返回的错误
+        _ => match response.text().await {
+            Ok(s) => {
+                error!("{}", s);
+                Err(FFError::ItemPrice(String::from("not 200")))
+            }
+            Err(e) => {
+                error!("{}", e);
+                Err(FFError::ItemPrice(String::from("请求错误啦")))
+            }
+        },
     }
 }
 #[tokio::test]

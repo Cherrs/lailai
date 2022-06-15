@@ -1,4 +1,8 @@
 use futures::future::try_join_all;
+use log::error;
+use reqwest::Response;
+use reqwest::StatusCode;
+use serde::de::DeserializeOwned;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_json::Value;
@@ -66,10 +70,37 @@ impl FF14 {
                 server_name, item_id,
             ))
             .send()
-            .await?
-            .json::<ItemPriceResult>()
             .await?;
-        Ok(item_price)
+        parse_response::<ItemPriceResult>(item_price).await
+    }
+}
+
+async fn parse_response<T: DeserializeOwned>(response: Response) -> Result<T, FFError> {
+    match response.status() {
+        StatusCode::OK => {
+            let rspbytes = response.bytes().await?;
+            let response = serde_json::from_slice(&rspbytes);
+            //反序列化不成功输出错误body
+            let response = match response {
+                Ok(n) => n,
+                Err(e) => {
+                    error!("解析json错误，body: {}", String::from_utf8_lossy(&rspbytes));
+                    return Err(FFError::SerializeError(e));
+                }
+            };
+            Ok(response)
+        }
+        //TODO:解析universalis.app api 返回的错误
+        _ => match response.text().await {
+            Ok(s) => {
+                error!("{}", s);
+                Err(FFError::ItemPrice(String::from("not 200")))
+            }
+            Err(e) => {
+                error!("{}", e);
+                Err(FFError::ItemPrice(String::from("请求错误啦")))
+            }
+        },
     }
 }
 
