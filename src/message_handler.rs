@@ -104,6 +104,9 @@ impl Handler for MyHandler {
                         .unwrap();
                 }
             }
+            QEvent::Login(qq) => {
+                info!("{} {}", qq, "登陆成功🎉");
+            }
             _ => {
                 debug!("{:?}", e);
             }
