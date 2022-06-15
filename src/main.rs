@@ -11,7 +11,6 @@ use config::GROUP_CONF;
 use dialoguer::{console::Term, theme::ColorfulTheme, Input, Password, Select};
 use fflogsv1::FF14;
 use log::{debug, error, info};
-use qrcode::QrCode;
 use ricq::{
     client::Token,
     device::Device,
@@ -55,9 +54,9 @@ pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ///初始化机器人
 pub async fn initbot() -> (JoinHandle<()>, Arc<Client>) {
-    let device = match Path::new("config/device.json").exists() {
+    let device = match Path::new("device.json").exists() {
         true => serde_json::from_str(
-            &tokio::fs::read_to_string("config/device.json")
+            &tokio::fs::read_to_string("device.json")
                 .await
                 .expect("failed to read device.json"),
         )
@@ -65,17 +64,17 @@ pub async fn initbot() -> (JoinHandle<()>, Arc<Client>) {
         false => {
             let d = Device::random();
             tokio::fs::write(
-                "config/device.json",
+                "device.json",
                 serde_json::to_string(&d).expect("device.json写入失败，请检查权限"),
             )
             .await
-            .expect("failed to write device info to file");
+            .expect("device.json写入失败，请检查权限");
             d
         }
     };
-    let token: Option<Token> = match Path::new("config/session.key").exists() {
+    let token: Option<Token> = match Path::new("session.key").exists() {
         true => serde_json::from_str(
-            &tokio::fs::read_to_string("config/session.key")
+            &tokio::fs::read_to_string("session.key")
                 .await
                 .expect("无法读取session.key，请检查权限"),
         )
@@ -186,18 +185,16 @@ pub async fn initbot() -> (JoinHandle<()>, Arc<Client>) {
                     //登录二维码展示
                     ricq::QRCodeState::ImageFetch(x) => {
                         let img = image::load_from_memory(&x.image_data).unwrap();
+                        tokio::fs::write("qrcode.jpg", &x.image_data)
+                            .await
+                            .expect("二维码保存失败");
                         let decoder = bardecoder::default_decoder();
                         let results = decoder.decode(&img);
                         let qrstr = results[0].as_ref().unwrap();
-                        let code = QrCode::new(qrstr).unwrap();
-                        let image = code
-                            .render::<char>()
-                            .quiet_zone(false)
-                            .module_dimensions(2, 1)
-                            .build();
-                        println!("{}", image);
+                        qr2term::print_qr(qrstr).unwrap();
+                        println!("扫码打印出的二维码，若无法扫描打开程序目录下qrcode.jpg");
                         if let Err(err) = auto_query_qrcode(&client, &x.sig).await {
-                            panic!("登录失败 {}", err)
+                            panic!("登录失败，请重试 {}", err)
                         };
                     }
                     _ => {
@@ -215,7 +212,7 @@ pub async fn initbot() -> (JoinHandle<()>, Arc<Client>) {
     {
         let token = client.gen_token().await;
         let tokenstr = serde_json::to_vec(&token).unwrap();
-        tokio::fs::write("config/session.key", tokenstr)
+        tokio::fs::write("session.key", tokenstr)
             .await
             .expect("无法写入session.key，请检查");
     }
