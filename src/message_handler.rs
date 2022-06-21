@@ -22,9 +22,9 @@ impl Handler for MyHandler {
             QEvent::GroupMessage(m) => {
                 info!(
                     "MESSAGE (GROUP={}): {}",
-                    m.message.group_code, m.message.elements
+                    m.inner.group_code, m.inner.elements
                 );
-                let mut elme = m.message.elements.into_iter();
+                let mut elme = m.inner.elements.into_iter();
                 if let Some(RQElem::At(at)) = elme.next() && at.target == m.client.uin().await {
                     match elme.next() {
                         Some(RQElem::Text(t)) if t.content != " " => {
@@ -35,16 +35,16 @@ impl Handler for MyHandler {
                                 Some(c) if c == "物品"=>{
                                     let itemstr:Vec<&str> = args.collect();
                                     let itemstr = itemstr.join(" ");
-                                    let msg = send_item_data_to_group(&itemstr,m.message.group_code,&self.ff14client,&m.client).await;
-                                    if let Err(e) = m.client.send_group_message(m.message.group_code, msg).await{
+                                    let msg = send_item_data_to_group(&itemstr,m.inner.group_code,&self.ff14client,&m.client).await;
+                                    if let Err(e) = m.client.send_group_message(m.inner.group_code, msg).await{
                                         error!("发送错误{}",e);
                                     }
                                 }
                                 Some(c) if c == "价格"=>{
                                     let itemstr:Vec<&str> = args.collect();
                                     let itemstr = itemstr.join(" ");
-                                    let msg = send_item_price_to_group(&itemstr,m.message.group_code,&self.ff14client,&m.client).await;
-                                    if let Err(e) = m.client.send_group_message(m.message.group_code, msg).await{
+                                    let msg = send_item_price_to_group(&itemstr,m.inner.group_code,&self.ff14client,&m.client).await;
+                                    if let Err(e) = m.client.send_group_message(m.inner.group_code, msg).await{
                                         error!("发送错误{}",e);
                                     }
                                     info!("{}",itemstr);
@@ -54,9 +54,9 @@ impl Handler for MyHandler {
                         }
                         _=>{
                             if GROUP_CONF_BYQQ.get().is_some(){
-                                let msg = send_highest_data_to_group(m.message.from_uin,&self.ff14client,).await;
+                                let msg = send_highest_data_to_group(m.inner.from_uin,&self.ff14client,).await;
                                 if let Some(msg) = msg{
-                                    if let Err(e) = m.client.send_group_message(m.message.group_code, msg).await{
+                                    if let Err(e) = m.client.send_group_message(m.inner.group_code, msg).await{
                                         error!("发送错误{}",e);
                                     }
                                 }
@@ -68,26 +68,23 @@ impl Handler for MyHandler {
             QEvent::FriendMessage(m) => {
                 info!(
                     "MESSAGE (FRIEND={}): {}",
-                    m.message.from_uin, m.message.elements
+                    m.inner.from_uin, m.inner.elements
                 );
             }
             QEvent::GroupTempMessage(m) => {
-                info!(
-                    "MESSAGE (TEMP={}): {}",
-                    m.message.from_uin, m.message.elements
-                );
+                info!("MESSAGE (TEMP={}): {}", m.inner.from_uin, m.inner.elements);
             }
             QEvent::GroupRequest(m) => {
                 info!(
                     "REQUEST (GROUP={}, UIN={}): {}",
-                    m.request.group_code, m.request.req_uin, m.request.message
+                    m.inner.group_code, m.inner.req_uin, m.inner.message
                 );
             }
-            QEvent::FriendRequest(m) => {
-                info!("REQUEST (UIN={}): {}", m.request.req_uin, m.request.message);
+            QEvent::NewFriendRequest(m) => {
+                info!("REQUEST (UIN={}): {}", m.inner.req_uin, m.inner.message);
             }
             QEvent::NewMember(m) => {
-                if m.new_member.member_uin == m.client.uin().await {
+                if m.inner.member_uin == m.client.uin().await {
                     let mut mc = MessageChain::default();
                     let s = String::from_utf8(vec![
                         229, 176, 143, 232, 173, 166, 229, 175, 159, 230, 157, 165, 229, 149, 166,
@@ -99,7 +96,7 @@ impl Handler for MyHandler {
                     .unwrap();
                     mc.push(Text::new(s));
                     m.client
-                        .send_group_message(m.new_member.group_code, mc)
+                        .send_group_message(m.inner.group_code, mc)
                         .await
                         .unwrap();
                 }
