@@ -31,7 +31,7 @@ log = "0.4"
 simplelog = "0.12.0"
 
 #sendreport缓存数据
-sqlx = { version = "0.5", features = ["runtime-tokio-rustls", "postgres"] }
+sqlx = { version = "0.6", features = ["runtime-tokio-rustls", "postgres"] }
 sled = "0.34"
 
 fflogsv1 = { path = "./fflogsv1" }
