@@ -1,5 +1,5 @@
 #![feature(let_chains)]
-#![feature(path_try_exists)]
+#![feature(fs_try_exists)]
 mod config;
 mod message_handler;
 mod pgstore;
@@ -88,7 +88,7 @@ pub async fn initbot() -> (JoinHandle<()>, Arc<Client>) {
                 .as_str(),
         ),
     };
-    let client = Arc::new(Client::new(device, get_version(Protocol::IPad), myh));
+    let client = Arc::new(Client::new(device, get_version(Protocol::MacOS), myh));
     let stream = TcpStream::connect(client.get_address())
         .await
         .expect("failed to connect");
