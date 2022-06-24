@@ -45,10 +45,10 @@ anyhow = "1"
 #控制台
 dialoguer = "0.10"
 
-[target.x86_64-unknown-linux-musl.dependencies]
-openssl = { version = "0.10", features = ["vendored"] }
-[target.x86_64-unknown-linux-gun.dependencies]
-openssl = { version = "0.10", features = ["vendored"] }
+# [target.x86_64-unknown-linux-musl.dependencies]
+# openssl = { version = "0.10", features = ["vendored"] }
+# [target.x86_64-unknown-linux-gun.dependencies]
+# openssl = { version = "0.10", features = ["vendored"] }
 [profile.release]
 lto = true
 opt-level = "z"
