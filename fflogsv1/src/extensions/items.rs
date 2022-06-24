@@ -86,12 +86,17 @@ async fn parse_response<T: DeserializeOwned>(response: Response) -> Result<T, FF
         },
     }
 }
-#[tokio::test]
-async fn get_items_test() {
-    let ff = FF14::new("123");
-    let p = ff.get_items("翅膀").await.unwrap();
-    for i in p {
-        println!("{}", i.name);
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[tokio::test]
+    async fn get_items_test() {
+        let ff = FF14::new("123");
+        let p = ff.get_items("翅膀").await.unwrap();
+        for i in p {
+            println!("{}", i.name);
+        }
     }
 }
 
