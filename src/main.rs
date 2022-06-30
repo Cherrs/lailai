@@ -126,7 +126,7 @@ pub async fn initbot() -> (JoinHandle<()>, Arc<Client>) {
                         LoginResponse::Success(LoginSuccess {
                             ref account_info, ..
                         }) => {
-                            info!("login success: {:?}", account_info);
+                            info!("登录成功！🎉 {:?}", account_info);
                             break;
                         }
                         LoginResponse::DeviceLocked(x) => {
@@ -205,7 +205,17 @@ pub async fn initbot() -> (JoinHandle<()>, Arc<Client>) {
             _ => {}
         }
     } else {
-        client.token_login(token.unwrap()).await.unwrap();
+        let resp = client.token_login(token.unwrap()).await.unwrap();
+        match resp {
+            LoginResponse::Success(LoginSuccess {
+                ref account_info, ..
+            }) => {
+                info!("登录成功！🎉 {:?}", account_info);
+            }
+            _ => {
+                info!("{:?}", resp);
+            }
+        }
     }
 
     after_login(&client).await;
