@@ -1,5 +1,7 @@
 #![feature(let_chains)]
 #![feature(fs_try_exists)]
+#[cfg(target_os = "windows")]
+mod captcha_window;
 mod config;
 mod message_handler;
 mod pgstore;
@@ -146,14 +148,26 @@ pub async fn initbot() -> (JoinHandle<()>, Arc<Client>) {
                                 verify_url.as_ref().unwrap()
                             ))
                             .unwrap();
-                            let ticket: String = Input::with_theme(&ColorfulTheme::default())
-                                .with_prompt("请输入ticket")
-                                .interact()
-                                .unwrap();
-                            resp = client
-                                .submit_ticket(&ticket)
-                                .await
-                                .expect("failed to submit ticket");
+                            if cfg!(target_os = "windows") {
+                                match captcha_window::ticket(verify_url.as_ref().unwrap()) {
+                                    Some(ticket) => {
+                                        resp = client
+                                            .submit_ticket(&ticket)
+                                            .await
+                                            .expect("failed to submit ticket");
+                                    }
+                                    None => {}
+                                }
+                            } else {
+                                let ticket: String = Input::with_theme(&ColorfulTheme::default())
+                                    .with_prompt("请输入ticket")
+                                    .interact()
+                                    .unwrap();
+                                resp = client
+                                    .submit_ticket(&ticket)
+                                    .await
+                                    .expect("failed to submit ticket");
+                            }
                         }
                         LoginResponse::DeviceLockLogin { .. } => {
                             resp = client

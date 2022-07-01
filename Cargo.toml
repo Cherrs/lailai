@@ -1,6 +1,6 @@
 [package]
 name = "lailai"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -44,6 +44,9 @@ anyhow = "1"
 
 #控制台
 dialoguer = "0.10"
+
+[target.'cfg(windows)'.dependencies]
+wry = "0.19.0"
 
 [profile.release]
 lto = true
