@@ -148,17 +148,18 @@ pub async fn initbot() -> (JoinHandle<()>, Arc<Client>) {
                                 verify_url.as_ref().unwrap()
                             ))
                             .unwrap();
-                            if cfg!(target_os = "windows") {
-                                match captcha_window::ticket(verify_url.as_ref().unwrap()) {
-                                    Some(ticket) => {
-                                        resp = client
-                                            .submit_ticket(&ticket)
-                                            .await
-                                            .expect("failed to submit ticket");
-                                    }
-                                    None => {}
+                            #[cfg(target_os = "windows")]
+                            match captcha_window::ticket(verify_url.as_ref().unwrap()) {
+                                Some(ticket) => {
+                                    resp = client
+                                        .submit_ticket(&ticket)
+                                        .await
+                                        .expect("failed to submit ticket");
                                 }
-                            } else {
+                                None => {}
+                            }
+                            #[cfg(not(target_os = "windows"))]
+                            {
                                 let ticket: String = Input::with_theme(&ColorfulTheme::default())
                                     .with_prompt("请输入ticket")
                                     .interact()
