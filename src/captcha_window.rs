@@ -1,8 +1,15 @@
 use std::collections::HashMap;
 
 use wry::{
-    application::{dpi::PhysicalSize, platform::run_return::EventLoopExtRunReturn},
+    application::{
+        dpi::PhysicalSize,
+        event::{Event, StartCause, WindowEvent},
+        event_loop::{ControlFlow, EventLoop},
+        platform::run_return::EventLoopExtRunReturn,
+        window::WindowBuilder,
+    },
     http::ResponseBuilder,
+    webview::WebViewBuilder,
 };
 
 pub fn ticket(url: &str) -> Option<String> {
@@ -10,17 +17,10 @@ pub fn ticket(url: &str) -> Option<String> {
     enum UserEvents {
         CloseWindow(String),
     }
-    use wry::{
-        application::{
-            event::{Event, StartCause, WindowEvent},
-            event_loop::{ControlFlow, EventLoop},
-            window::WindowBuilder,
-        },
-        webview::WebViewBuilder,
-    };
     let mut ticket = None;
     let mut event_loop = EventLoop::<UserEvents>::with_user_event();
     let proxy = event_loop.create_proxy();
+    let ipcproxy = proxy.clone();
     let mut windows = HashMap::new();
     let window = WindowBuilder::new()
         .with_title("滑")
@@ -36,6 +36,9 @@ pub fn ticket(url: &str) -> Option<String> {
         .with_url(url)
         .unwrap()
         .with_devtools(true)
+        .with_ipc_handler(move |_, s| {
+            let _ = ipcproxy.send_event(UserEvents::CloseWindow(s));
+        })
         .with_custom_protocol("ricq".into(), move |request| {
             let _ticket = String::from_utf8_lossy(request.body()).to_string();
             let _ = proxy.send_event(UserEvents::CloseWindow(_ticket));
@@ -45,26 +48,24 @@ pub fn ticket(url: &str) -> Option<String> {
         })
         .with_initialization_script(
             r#"
-        (function() {
             var origOpen = XMLHttpRequest.prototype.open;
-            XMLHttpRequest.prototype.open = function() {
-                this.addEventListener('load', function() {
+            XMLHttpRequest.prototype.open = function () {
+                this.addEventListener('load', function () {
                     if (this.responseURL == 'https://t.captcha.qq.com/cap_union_new_verify') {
                         var j = JSON.parse(this.responseText);
                         if (j.errorCode == '0') {
-                            console.log(j.ticket);
-                            fetch("https://ricq.ticket", {
-                                method: "POST",
-                                body: j.ticket
-                            });
-                            window.ipc.postMessage('close');
+                            window.ipc.postMessage(j.ticket);
+                            if (navigator.userAgent.indexOf('Windows') > -1) {
+                                fetch('https://ricq.ticket', { 
+                                    method: "POST",
+                                    body: j.ticket
+                                });
+                            }
                         }
                     }
-        
                 });
                 origOpen.apply(this, arguments);
-            };
-        })();
+            }
         "#,
         )
         .build()
