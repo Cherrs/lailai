@@ -149,14 +149,13 @@ pub async fn initbot() -> (JoinHandle<()>, Arc<Client>) {
                             ))
                             .unwrap();
                             #[cfg(target_os = "windows")]
-                            match captcha_window::ticket(verify_url.as_ref().unwrap()) {
-                                Some(ticket) => {
-                                    resp = client
-                                        .submit_ticket(&ticket)
-                                        .await
-                                        .expect("failed to submit ticket");
-                                }
-                                None => {}
+                            if let Some(ticket) =
+                                captcha_window::ticket(verify_url.as_ref().unwrap())
+                            {
+                                resp = client
+                                    .submit_ticket(&ticket)
+                                    .await
+                                    .expect("failed to submit ticket");
                             }
                             #[cfg(not(target_os = "windows"))]
                             {

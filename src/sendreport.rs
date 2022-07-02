@@ -82,18 +82,15 @@ pub async fn trysendmessageorinit(client: &Client) -> Result<(), Box<dyn std::er
                         .collect();
                     for u in &v {
                         let qq = confs.iter().find(|x| x.name == u.character_name);
-                        match qq {
-                            Some(c) => {
-                                if group_qqs.contains(&c.qq) {
-                                    let mut at = At::new(c.qq);
-                                    at.display = u.character_name.to_string();
-                                    msg.push(at);
-                                    msg.push(Text::new(" ".to_string()));
-                                } else {
-                                    msg.push(Text::new(format!("{} ", u.character_name)));
-                                }
+                        if let Some(c) = qq {
+                            if group_qqs.contains(&c.qq) {
+                                let mut at = At::new(c.qq);
+                                at.display = u.character_name.to_string();
+                                msg.push(at);
+                                msg.push(Text::new(" ".to_string()));
+                            } else {
+                                msg.push(Text::new(format!("{} ", u.character_name)));
                             }
-                            None => {}
                         }
                     }
                     let fight = ff14.get_fight(&ppp.report_id, ppp.fight_id).await?;
