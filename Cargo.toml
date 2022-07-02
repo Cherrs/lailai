@@ -45,7 +45,7 @@ anyhow = "1"
 #控制台
 dialoguer = "0.10"
 
-[target.'cfg(windows)'.dependencies]
+[target.'cfg(any(target_os = "macos", target_os = "windows"))'.dependencies]
 wry = "0.19.0"
 
 [profile.release]
