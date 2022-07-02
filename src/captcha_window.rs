@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use wry::{
     application::{
-        dpi::PhysicalSize,
+        dpi::LogicalSize,
         event::{Event, StartCause, WindowEvent},
         event_loop::{ControlFlow, EventLoop},
         platform::run_return::EventLoopExtRunReturn,
@@ -24,7 +24,7 @@ pub fn ticket(url: &str) -> Option<String> {
     let mut windows = HashMap::new();
     let window = WindowBuilder::new()
         .with_title("滑")
-        .with_inner_size(PhysicalSize {
+        .with_inner_size(LogicalSize {
             width: 455,
             height: 390,
         })
