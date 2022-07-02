@@ -1,6 +1,6 @@
 #![feature(let_chains)]
 #![feature(fs_try_exists)]
-#[cfg(target_os = "windows")]
+#[cfg(any(target_os = "macos", target_os = "windows"))]
 mod captcha_window;
 mod config;
 mod message_handler;
