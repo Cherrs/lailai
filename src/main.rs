@@ -1,4 +1,3 @@
-#![feature(let_chains)]
 #![feature(fs_try_exists)]
 #[cfg(any(target_os = "macos", target_os = "windows"))]
 mod captcha_window;
