@@ -13,7 +13,7 @@ use dialoguer::{console::Term, theme::ColorfulTheme, Input, Password, Select};
 use fflogsv1::FF14;
 use log::{debug, error, info};
 use ricq::{
-    client::Token,
+    client::{Connector, DefaultConnector, Token},
     device::Device,
     ext::common::after_login,
     version::{get_version, Protocol},
@@ -21,7 +21,7 @@ use ricq::{
 };
 use simplelog::*;
 use std::{env, path::Path, sync::Arc, time::Duration};
-use tokio::{net::TcpStream, task::JoinHandle};
+use tokio::task::JoinHandle;
 
 #[tokio::main]
 pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -89,12 +89,16 @@ pub async fn initbot() -> (JoinHandle<()>, Arc<Client>) {
                 .as_str(),
         ),
     };
-    let client = Arc::new(Client::new(device, get_version(Protocol::MacOS), myh));
-    let stream = TcpStream::connect(client.get_address())
-        .await
-        .expect("failed to connect");
-    let c = client.clone();
-    let handle = tokio::spawn(async move { c.start(stream).await });
+    let client = Arc::new(Client::new(
+        device,
+        get_version(Protocol::AndroidWatch),
+        myh,
+    ));
+    let handle = tokio::spawn({
+        let client = client.clone();
+        let stream = DefaultConnector.connect(&client).await.unwrap();
+        async move { client.start(stream).await }
+    });
     tokio::task::yield_now().await; // 等一下，确保连上了
     let term = Term::stdout();
     if token.is_none() {
