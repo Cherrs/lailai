@@ -6,6 +6,7 @@ use serde::de::DeserializeOwned;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_json::Value;
+use stopwatch::Stopwatch;
 
 use crate::FFError;
 use crate::FF14;
@@ -14,6 +15,7 @@ impl FF14 {
     ///从wakingsands搜索物品
     pub async fn get_items(&self, name: &str) -> Result<Vec<Item>, FFError> {
         debug!("正在获取物品:{}", name);
+        let sw = Stopwatch::start_new();
         let result= self.client.get("https://cafemaker.wakingsands.com/search?string_algo=multi_match&limit=6&indexes=Item")
         .query(&[("string",name)])
         .send()
@@ -23,6 +25,7 @@ impl FF14 {
         for i in result.results {
             f.push(self.get_icon(i).await.unwrap());
         }
+        debug!("获取物品用时:{}", sw.elapsed_ms());
         Ok(f)
     }
     ///从wakingsands搜索物品
