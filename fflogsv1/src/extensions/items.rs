@@ -1,4 +1,4 @@
-use futures::future::try_join_all;
+use log::debug;
 use log::error;
 use reqwest::Response;
 use reqwest::StatusCode;
@@ -13,6 +13,7 @@ use crate::FF14;
 impl FF14 {
     ///从wakingsands搜索物品
     pub async fn get_items(&self, name: &str) -> Result<Vec<Item>, FFError> {
+        debug!("正在获取物品:{}", name);
         let result= self.client.get("https://cafemaker.wakingsands.com/search?string_algo=multi_match&limit=6&indexes=Item")
         .query(&[("string",name)])
         .send()
@@ -20,13 +21,9 @@ impl FF14 {
         let result = parse_response::<ItemsResult>(result).await?;
         let mut f = Vec::new();
         for i in result.results {
-            f.push(self.get_icon(i));
+            f.push(self.get_icon(i).await.unwrap());
         }
-        let result = try_join_all(f).await?;
-        if result.is_empty() {
-            return Err(FFError::ItemNotFound);
-        }
-        Ok(result)
+        Ok(f)
     }
     ///从wakingsands搜索物品
     pub async fn get_first_item(&self, name: &str) -> Result<Item, FFError> {

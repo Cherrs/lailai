@@ -27,12 +27,11 @@ impl FF14 {
         //获取第一个模糊搜索到的物品
         let item = self.get_first_item(name).await?;
         for i in server_list {
-            f.push(self.get_item_price_by_server(i, item.id));
+            f.push(self.get_item_price_by_server(i, item.id).await.unwrap());
         }
-        let items_price = try_join_all(f).await?;
         let mut items = Vec::new();
 
-        for i in items_price {
+        for i in f {
             let mut is: Vec<ItemsPriceList> = i
                 .listings
                 .iter()

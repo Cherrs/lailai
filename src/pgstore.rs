@@ -34,7 +34,7 @@ impl Store for PgStore {
                 VALUES ($1, $2);",
         )
         .bind(format!("{}#fight={}", &parse.report_id, &parse.fight_id))
-        .bind(&parse.start_time)
+        .bind(parse.start_time)
         .execute(&self.pool)
         .await
         .unwrap();
