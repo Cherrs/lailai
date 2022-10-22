@@ -23,10 +23,11 @@ impl FF14 {
         let result = parse_response::<ItemsResult>(result).await?;
         let mut f = Vec::new();
         for i in result.results {
-            f.push(self.get_icon(i).await.unwrap());
+            f.push(self.get_icon(i));
         }
+        let result = futures::future::try_join_all(f).await.unwrap();
         debug!("获取物品用时:{}", sw.elapsed_ms());
-        Ok(f)
+        Ok(result)
     }
     ///从wakingsands搜索物品
     pub async fn get_first_item(&self, name: &str) -> Result<Item, FFError> {

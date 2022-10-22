@@ -152,5 +152,5 @@ pub enum FFError {
     #[error("😒没有找到物品")]
     ItemNotFound,
     #[error(transparent)]
-    Unknown(#[from] Box<dyn std::error::Error>),
+    Unknown(#[from] Box<dyn std::error::Error + Send>),
 }

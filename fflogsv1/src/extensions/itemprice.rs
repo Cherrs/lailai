@@ -1,3 +1,4 @@
+use futures::future::try_join_all;
 use log::error;
 use reqwest::Response;
 use reqwest::StatusCode;
@@ -26,11 +27,12 @@ impl FF14 {
         //获取第一个模糊搜索到的物品
         let item = self.get_first_item(name).await?;
         for i in server_list {
-            f.push(self.get_item_price_by_server(i, item.id).await.unwrap());
+            f.push(self.get_item_price_by_server(i, item.id));
         }
+        let items_price = try_join_all(f).await?;
         let mut items = Vec::new();
 
-        for i in f {
+        for i in items_price {
             let mut is: Vec<ItemsPriceList> = i
                 .listings
                 .iter()
