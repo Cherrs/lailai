@@ -212,7 +212,7 @@ pub async fn initbot() -> (JoinHandle<()>, Arc<Client>) {
                         qr2term::print_qr(qrstr).unwrap();
                         println!("扫码打印出的二维码，若无法扫描打开程序目录下qrcode.jpg");
                         if let Err(err) = auto_query_qrcode(&client, &x.sig).await {
-                            panic!("登录失败，请重试 {}", err)
+                            panic!("登录失败，请重试 {err}")
                         };
                     }
                     _ => {

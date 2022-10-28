@@ -115,5 +115,5 @@ async fn get_config_file() -> Option<Vec<Configoption>> {
 async fn test() {
     init().await;
     let g = GROUP_CONF.get().unwrap();
-    println!("{:?}", g);
+    println!("{g:?}");
 }

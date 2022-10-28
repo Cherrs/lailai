@@ -69,5 +69,5 @@ fn insert() {
 async fn query() {
     let db = SledStore::create("db/test");
     let mm = db.query_by_start_time(50).await;
-    println!("{:?}", mm);
+    println!("{mm:?}");
 }

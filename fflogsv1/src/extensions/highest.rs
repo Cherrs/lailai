@@ -53,7 +53,7 @@ mod tests {
     async fn it_works() {
         let ff14client = FF14::new(&env::var("logskey").unwrap());
         let dtos = ff14client.get_highest("Iker", "琥珀原", "cn").await;
-        println!("{:#?}", dtos);
+        println!("{dtos:#?}");
     }
 }
 #[derive(Debug)]

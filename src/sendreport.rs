@@ -119,7 +119,7 @@ pub async fn trysendmessageorinit(client: &Client) -> Result<(), Box<dyn std::er
                                 get_death_str(u, &fight)
                             )));
                         }
-                        println!("{:#?}", group_name_server);
+                        println!("{group_name_server:#?}");
                     }
                     msg.push(Text::new(format!(
                         "https://cn.fflogs.com/reports/{}#fight={}&type=damage-done",
@@ -155,7 +155,7 @@ fn get_death_str(parse: &Parses, fight: &fight::GetFightDto) -> String {
     let dstr: Vec<String> = f.map(|x| x.deathname.to_string()).collect();
     let dcount = dstr.len();
     if dcount > 0 {
-        return format!("死亡 {} 次,死亡技能：{}", dcount, dstr.join(","));
+        return format!("死亡 {dcount} 次,死亡技能：{}", dstr.join(","));
     }
     "".to_string()
 }

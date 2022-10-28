@@ -89,7 +89,7 @@ pub fn ticket(url: &str) -> Option<String> {
                 event: WindowEvent::Resized(x),
                 ..
             } => {
-                println!("{:?}", x);
+                println!("{x:?}");
             }
             _ => (),
         }

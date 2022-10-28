@@ -154,10 +154,10 @@ async fn send_item_data_to_group(
     let icon = match ff14client.get_items(item_name).await {
         Ok(icon) => Some(icon),
         Err(err) => {
-            let errmsg = format!("获取物品失败,{}", err);
+            let errmsg = format!("获取物品失败,{err}");
             error!("{}", errmsg);
             if let FFError::ItemNotFound = err {
-                msg.push(Text::new(format!("😒什么是 {} ?", item_name)));
+                msg.push(Text::new(format!("😒什么是 {item_name} ?")));
             }
             return msg;
         }
@@ -185,7 +185,7 @@ async fn send_item_price_to_group(
     let item_price = match ff14client.get_item_price(item_name).await {
         Ok(icon) => icon,
         Err(err) => {
-            let emsg = format!("获取物品价格失败,{}", err);
+            let emsg = format!("获取物品价格失败,{err}");
             error!("{}", emsg);
             msg.push(Text::new(emsg));
             return msg;

@@ -45,8 +45,8 @@ impl FF14 {
         let mut build = self
             .client
             .get(format!(
-                "{}/parses/character/{}/{}/{}?api_key={}",
-                &self.url, character_name, server_name, server_region, &self.api_key,
+                "{}/parses/character/{character_name}/{server_name}/{server_region}?api_key={}",
+                &self.url, &self.api_key,
             ))
             .query(&[("metric", metric), ("timeframe", timeframe)]);
         if zone.is_some() {
@@ -62,8 +62,8 @@ impl FF14 {
         let rsp = self
             .client
             .get(format!(
-                "{}/report/fights/{}?api_key={}",
-                &self.url, code, &self.api_key
+                "{}/report/fights/{code}?api_key={}",
+                &self.url, &self.api_key
             ))
             .query(&[("translate", "true")])
             .send()
@@ -74,8 +74,8 @@ impl FF14 {
         let rsp = self
             .client
             .get(format!(
-                "{}/report/tables/summary/{}?api_key={}",
-                self.url, code, self.api_key
+                "{}/report/tables/summary/{code}?api_key={}",
+                self.url, self.api_key
             ))
             .query(&[("translate", "true")])
             .query(&[("start", start), ("end", end)])
@@ -93,8 +93,8 @@ impl FF14 {
         let rsp = self
             .client
             .get(format!(
-                "{}/report/tables/deaths/{}?api_key={}",
-                self.url, code, self.api_key
+                "{}/report/tables/deaths/{code}?api_key={}",
+                self.url, self.api_key
             ))
             .query(&[("translate", "true")])
             .query(&[("start", start)])
