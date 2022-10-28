@@ -24,7 +24,7 @@ impl FF14 {
             url: String::from("https://cn.fflogs.com:443/v1"),
         }
     }
-    pub fn new_withclient(api_key: &str, client: reqwest::Client) -> FF14 {
+    pub fn new_from_client(api_key: &str, client: reqwest::Client) -> FF14 {
         FF14 {
             api_key: String::from(api_key),
             client,
@@ -39,7 +39,7 @@ impl FF14 {
         server_region: &str,
         metric: &str,
         zone: Option<i32>,
-        timeframe: &str,
+        time_frame: &str,
     ) -> Result<Vec<Parses>, FFError> {
         info!("{} ⏳︎正在获取", character_name);
         let mut build = self
@@ -48,7 +48,7 @@ impl FF14 {
                 "{}/parses/character/{character_name}/{server_name}/{server_region}?api_key={}",
                 &self.url, &self.api_key,
             ))
-            .query(&[("metric", metric), ("timeframe", timeframe)]);
+            .query(&[("metric", metric), ("timeframe", time_frame)]);
         if zone.is_some() {
             build = build.query(&[("zone", zone.expect("获取character_parses的zone为空"))]);
         }
@@ -108,22 +108,25 @@ impl FF14 {
 async fn parse_response<T: DeserializeOwned>(response: Response) -> Result<T, FFError> {
     match response.status() {
         StatusCode::OK => {
-            let rspbytes = response.bytes().await?;
-            let response = serde_json::from_slice(&rspbytes);
+            let rsp_bytes = response.bytes().await?;
+            let response = serde_json::from_slice(&rsp_bytes);
             //反序列化不成功输出错误body
             let response = match response {
                 Ok(n) => n,
                 Err(e) => {
-                    error!("解析json错误，body: {}", String::from_utf8_lossy(&rspbytes));
+                    error!(
+                        "解析json错误，body: {}",
+                        String::from_utf8_lossy(&rsp_bytes)
+                    );
                     return Err(FFError::SerializeError(e));
                 }
             };
             Ok(response)
         }
         _ => {
-            let rspbytes = response.bytes().await?;
-            let response = serde_json::from_slice::<FFLogsv1ErrorBody>(&rspbytes)?;
-            Err(FFError::FFLogsv1Error(format!(
+            let rsp_bytes = response.bytes().await?;
+            let response = serde_json::from_slice::<FFLogsV1ErrorBody>(&rsp_bytes)?;
+            Err(FFError::FFLogsV1Error(format!(
                 "{}:{}",
                 response.status, response.error
             )))
@@ -132,7 +135,7 @@ async fn parse_response<T: DeserializeOwned>(response: Response) -> Result<T, FF
 }
 
 #[derive(Deserialize, Debug)]
-struct FFLogsv1ErrorBody {
+struct FFLogsV1ErrorBody {
     status: u16,
     error: String,
 }
@@ -140,7 +143,7 @@ struct FFLogsv1ErrorBody {
 #[derive(Debug, Error)]
 pub enum FFError {
     #[error("🙃请求fflogs错误,{0}")]
-    FFLogsv1Error(String),
+    FFLogsV1Error(String),
     #[error("🙃请求物品价格错误,{0}")]
     ItemPrice(String),
     #[error("🙃搜索物品错误,{0}")]

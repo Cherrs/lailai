@@ -1,8 +1,8 @@
 use crate::{
     config::{GROUP_CONF, GROUP_CONF_BYGROUPID},
     message_handler,
-    pgstore::PgStore,
-    sledstore::SledStore,
+    pg_store::PgStore,
+    sled_store::SledStore,
 };
 use chrono::{DateTime, Duration, FixedOffset, TimeZone, Utc};
 use fflogsv1::{extensions::*, parses::Parses, FF14};
@@ -18,7 +18,7 @@ use ricq::{
 use std::{collections::HashMap, env};
 use tokio::time::Instant;
 
-pub async fn trysendmessageorinit(client: &Client) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn send_message_init(client: &Client) -> Result<(), Box<dyn std::error::Error>> {
     let store = match env::var("store")
         .unwrap_or_else(|_| "local".to_string())
         .as_str()

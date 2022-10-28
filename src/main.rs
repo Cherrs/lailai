@@ -4,9 +4,9 @@
 mod captcha_window;
 mod config;
 mod message_handler;
-mod pgstore;
-mod sendreport;
-mod sledstore;
+mod pg_store;
+mod report_send;
+mod sled_store;
 mod store;
 use crate::message_handler::MyHandler;
 use config::GROUP_CONF;
@@ -28,13 +28,13 @@ use tokio::task::JoinHandle;
 pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
     //初始化配置
     config::init().await;
-    initlog();
-    let (handle, client) = initbot().await;
+    log_init();
+    let (handle, client) = bot_init().await;
     match GROUP_CONF.get() {
         Some(_) => {
             loop {
                 //获取logs数据，检测更新发送到群
-                match sendreport::trysendmessageorinit(&client).await {
+                match report_send::send_message_init(&client).await {
                     Ok(_) => {}
                     Err(e) => error!("{:?}", e),
                 }
@@ -55,7 +55,7 @@ pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 ///初始化机器人
-pub async fn initbot() -> (JoinHandle<()>, Arc<Client>) {
+pub async fn bot_init() -> (JoinHandle<()>, Arc<Client>) {
     let device = match Path::new("device.json").exists() {
         true => serde_json::from_str(
             &tokio::fs::read_to_string("device.json")
@@ -113,7 +113,7 @@ pub async fn initbot() -> (JoinHandle<()>, Arc<Client>) {
             .unwrap();
         match login_type[selection] {
             "账号密码+短信验证码" => {
-                let upwd = QQandPassword {
+                let pwd = QQandPassword {
                     qq: Input::with_theme(&ColorfulTheme::default())
                         .with_prompt("QQ号")
                         .interact()
@@ -123,10 +123,7 @@ pub async fn initbot() -> (JoinHandle<()>, Arc<Client>) {
                         .interact()
                         .unwrap(),
                 };
-                let mut resp = client
-                    .password_login(upwd.qq, &upwd.password)
-                    .await
-                    .unwrap();
+                let mut resp = client.password_login(pwd.qq, &pwd.password).await.unwrap();
                 loop {
                     match resp {
                         LoginResponse::Success(LoginSuccess {
@@ -208,8 +205,8 @@ pub async fn initbot() -> (JoinHandle<()>, Arc<Client>) {
                             .expect("二维码保存失败");
                         let decoder = bardecoder::default_decoder();
                         let results = decoder.decode(&img);
-                        let qrstr = results[0].as_ref().unwrap();
-                        qr2term::print_qr(qrstr).unwrap();
+                        let qr_str = results[0].as_ref().unwrap();
+                        qr2term::print_qr(qr_str).unwrap();
                         println!("扫码打印出的二维码，若无法扫描打开程序目录下qrcode.jpg");
                         if let Err(err) = auto_query_qrcode(&client, &x.sig).await {
                             panic!("登录失败，请重试 {err}")
@@ -239,8 +236,8 @@ pub async fn initbot() -> (JoinHandle<()>, Arc<Client>) {
     after_login(&client).await;
     {
         let token = client.gen_token().await;
-        let tokenstr = serde_json::to_vec(&token).unwrap();
-        tokio::fs::write("session.key", tokenstr)
+        let token_str = serde_json::to_vec(&token).unwrap();
+        tokio::fs::write("session.key", token_str)
             .await
             .expect("无法写入session.key，请检查");
     }
@@ -248,8 +245,8 @@ pub async fn initbot() -> (JoinHandle<()>, Arc<Client>) {
 }
 
 ///初始化日志
-fn initlog() {
-    let logconfig = ConfigBuilder::new()
+fn log_init() {
+    let log_config = ConfigBuilder::new()
         .set_time_format_rfc3339()
         .add_filter_ignore("sqlx".to_string())
         .add_filter_ignore_str("mio::poll")
@@ -265,7 +262,7 @@ fn initlog() {
     }
     CombinedLogger::init(vec![TermLogger::new(
         level,
-        logconfig,
+        log_config,
         TerminalMode::Mixed,
         ColorChoice::Auto,
     )])
