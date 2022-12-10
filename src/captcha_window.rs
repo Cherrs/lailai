@@ -8,7 +8,7 @@ use wry::{
         platform::run_return::EventLoopExtRunReturn,
         window::WindowBuilder,
     },
-    http::ResponseBuilder,
+    http::Response,
     webview::WebViewBuilder,
 };
 
@@ -42,9 +42,10 @@ pub fn ticket(url: &str) -> Option<String> {
         .with_custom_protocol("ricq".into(), move |request| {
             let _ticket = String::from_utf8_lossy(request.body()).to_string();
             let _ = proxy.send_event(UserEvents::CloseWindow(_ticket));
-            ResponseBuilder::new()
+            Ok(Response::builder()
                 .status(200)
                 .body("ok".as_bytes().to_vec())
+                .unwrap())
         })
         .with_initialization_script(
             r#"

@@ -1,4 +1,4 @@
-use crate::config::GROUP_CONF_BYQQ;
+use crate::{chatgpt::get_ai_message, config::GROUP_CONF_BYQQ};
 use async_trait::async_trait;
 use chrono::{FixedOffset, TimeZone, Utc};
 use fflogsv1::{FFError, FF14};
@@ -24,6 +24,12 @@ impl Handler for MyHandler {
                     "MESSAGE (GROUP={}): {}",
                     m.inner.group_code, m.inner.elements
                 );
+                let reply = Reply {
+                    reply_seq: m.inner.seqs[0],
+                    sender: m.inner.from_uin,
+                    time: m.inner.time,
+                    elements: m.inner.elements.clone(),
+                };
                 let mut elme = m.inner.elements.into_iter();
                 if let Some(RQElem::At(at)) = elme.next() && at.target == m.client.uin().await {
                     match elme.next() {
@@ -49,7 +55,23 @@ impl Handler for MyHandler {
                                     }
                                     info!("{}",itemstr);
                                 }
-                                _=>{}
+                                _=>{
+                                    let mut msg = MessageChain::default();
+                                    let rsp = get_ai_message(t.content).await;
+                                    msg.with_reply(reply);
+                                    match rsp{
+                                        Err(e)=>{
+                                            error!("{}",e);
+                                            msg.push(Text::new("不知道，你可以再问一次试试".to_string()));
+                                        },
+                                        Ok(r)=>{
+                                            msg.push(Text::new(r));
+                                        }
+                                    }
+                                    if let Err(e) = m.client.send_group_message(m.inner.group_code, msg).await{
+                                        error!("发送错误{}",e);
+                                    }
+                                }
                             }
                         }
                         _=>{
@@ -211,12 +233,18 @@ async fn send_item_price_to_group(
         ));
         msg.push(name);
     }
-    let last_update_time = Utc
-        .timestamp_millis(last_update_time)
-        .with_timezone(&FixedOffset::east(8 * 3600));
-    msg.push(Text::new(format!(
-        "\n最后更新时间 {}",
-        last_update_time.format("%Y-%m-%d %H:%M:%S")
-    )));
+    match Utc.timestamp_millis_opt(last_update_time) {
+        chrono::LocalResult::None => todo!(),
+        chrono::LocalResult::Single(last_update_time) => {
+            if let Some(offset) = FixedOffset::east_opt(8 * 3600) {
+                let last_update_time = last_update_time.with_timezone(&offset);
+                msg.push(Text::new(format!(
+                    "\n最后更新时间 {}",
+                    last_update_time.format("%Y-%m-%d %H:%M:%S")
+                )));
+            }
+        }
+        chrono::LocalResult::Ambiguous(_, _) => todo!(),
+    }
     msg
 }
