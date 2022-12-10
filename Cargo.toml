@@ -45,7 +45,7 @@ anyhow = "1"
 #控制台
 dialoguer = "0.10"
 
-chatgpt-rs = { git = "https://github.com/b4den/chatgpt-rs" }
+chatgpt-rs = { git = "https://github.com/Cherrs/chatgpt-rs" }
 
 [target.'cfg(any(target_os = "macos", target_os = "windows"))'.dependencies]
 wry = "0.23"
