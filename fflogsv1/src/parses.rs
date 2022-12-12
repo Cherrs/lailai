@@ -22,7 +22,7 @@ pub struct Parses {
     pub character_name: String,
     pub server: String,
     pub percentile: f32,
-    pub ilvl_key_or_patch: i64,
+    pub ilvl_key_or_patch: f64,
     pub total: f32,
     pub estimated: Option<bool>,
 }
