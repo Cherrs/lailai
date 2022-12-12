@@ -66,8 +66,7 @@ impl FF14 {
         let item_price = self
             .client
             .get(format!(
-                "https://universalis.app/api/{}/{}",
-                server_name, item_id,
+                "https://universalis.app/api/{server_name}/{item_id}",
             ))
             .send()
             .await?;
