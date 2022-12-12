@@ -140,8 +140,16 @@ pub fn difficulty_to_string(difficulty: i32) -> &'static str {
 }
 
 async fn send_highest_data_to_group(from_uin: i64, ff14client: &FF14) -> Option<MessageChain> {
-    let configs = GROUP_CONF_BYQQ.get().unwrap();
-    let config = configs.get(&from_uin).unwrap();
+    let Some(configs) = GROUP_CONF_BYQQ.get()
+    else {
+        error!("QQ号：{} 没有配置在group_config文件中，或配置有误",from_uin);
+        return None;
+    };
+    let Some(config) = configs.get(&from_uin)
+    else {
+        error!("QQ号：{} 没有配置在group_config文件中，或配置有误",from_uin);
+        return None;
+    };
     if let Ok(dtos) = ff14client
         .get_highest(&config.name, &config.server, &config.region)
         .await
