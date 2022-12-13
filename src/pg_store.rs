@@ -14,7 +14,7 @@ impl PgStore {
             .max_connections(5)
             .connect(str)
             .await
-            .unwrap();
+            .expect("数据库连接失败，如无数据库请配置store: local");
         Box::new(PgStore { pool })
     }
 }
