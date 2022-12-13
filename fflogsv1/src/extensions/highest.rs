@@ -6,6 +6,7 @@ impl FF14 {
         character_name: &str,
         server_name: &str,
         server_region: &str,
+        zone: Option<i32>,
     ) -> Result<Vec<GetHighestDataDto>, FFError> {
         let mut data = self
             .character_parses(
@@ -13,7 +14,7 @@ impl FF14 {
                 server_name,
                 server_region,
                 "rdps",
-                None,
+                zone,
                 "historical",
             )
             .await?;
@@ -52,7 +53,9 @@ mod tests {
     #[tokio::test]
     async fn it_works() {
         let ff14client = FF14::new(&env::var("logskey").unwrap());
-        let dtos = ff14client.get_highest("Iker", "琥珀原", "cn").await;
+        let dtos = ff14client
+            .get_highest("绝命怒嚎", "拉诺西亚", "cn", Some(45))
+            .await;
         println!("{dtos:#?}");
     }
 }
