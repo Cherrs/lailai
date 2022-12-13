@@ -150,13 +150,14 @@ async fn send_highest_data_to_group(from_uin: i64, ff14client: &FF14) -> Option<
         error!("QQ号：{} 没有配置在group_config文件中，或配置有误",from_uin);
         return None;
     };
+    let mut msg = MessageChain::default();
+    msg.push(Text::new(format!("{} {}\n", config.name, config.server)));
+    // 当前版本数据和排行
     if let Ok(dtos) = ff14client
-        .get_highest(&config.name, &config.server, &config.region)
+        .get_highest(&config.name, &config.server, &config.region, None)
         .await
     {
         let mut dtost = dtos.iter();
-        let mut msg = MessageChain::default();
-        msg.push(Text::new(format!("{} {}\n", config.name, config.server)));
         for d in dtost.by_ref() {
             if d.difficulty == 101 {
                 msg.push(Text::new(format!(
@@ -169,9 +170,38 @@ async fn send_highest_data_to_group(from_uin: i64, ff14client: &FF14) -> Option<
                 )));
             }
         }
-        return Some(msg);
     }
-    None
+    // 幻想龙诗绝境战
+    if let Ok(dtos) = ff14client
+        .get_highest(&config.name, &config.server, &config.region, Some(45))
+        .await
+    {
+        let mut dtost = dtos.iter();
+        for d in dtost.by_ref() {
+            if d.difficulty == 100 {
+                msg.push(Text::new(format!(
+                    "{}({}) {:.1}% rdps:{:.1} {}\n",
+                    d.bossname, "绝境战", d.rank, d.rdps, d.spec
+                )));
+            }
+        }
+    }
+    // 旧版本绝境战
+    if let Ok(dtos) = ff14client
+        .get_highest(&config.name, &config.server, &config.region, Some(43))
+        .await
+    {
+        let mut dtost = dtos.iter();
+        for d in dtost.by_ref() {
+            if d.difficulty == 100 {
+                msg.push(Text::new(format!(
+                    "{}({}) {:.1}% rdps:{:.1} {}\n",
+                    d.bossname, "绝境战", d.rank, d.rdps, d.spec
+                )));
+            }
+        }
+    }
+    Some(msg)
 }
 ///模糊查询物品
 async fn send_item_data_to_group(
@@ -241,6 +271,7 @@ async fn send_item_price_to_group(
         ));
         msg.push(name);
     }
+    // TODO 处理LocalResult
     match Utc.timestamp_millis_opt(last_update_time) {
         chrono::LocalResult::None => todo!(),
         chrono::LocalResult::Single(last_update_time) => {
