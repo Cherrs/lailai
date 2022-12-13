@@ -1,7 +1,6 @@
 use anyhow::{Ok, Result};
 use chatgpt_rs::client::GPTClient;
 use serde::{Deserialize, Serialize};
-use std::env::var;
 
 #[derive(Debug, Deserialize, Serialize)]
 struct Request {

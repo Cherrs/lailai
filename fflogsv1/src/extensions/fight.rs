@@ -42,10 +42,12 @@ pub struct Deaths {
 #[cfg(test)]
 mod tests {
 
+    use std::env;
+
     use crate::FF14;
     #[tokio::test]
     async fn get_fight() {
-        let ff14client = FF14::new("ddac920f50d421116883220e4d149fdf");
+        let ff14client = FF14::new(&env::var("logskey").unwrap());
         let dtos = ff14client.get_fight("1MahAGrFRJ9BVqYK", 1).await.unwrap();
         println!("{dtos:?}");
     }
