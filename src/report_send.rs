@@ -95,9 +95,11 @@ pub async fn send_message_init(client: &Client) -> Result<(), Box<dyn std::error
                     }
                     let fight = ff14.get_fight(&ppp.report_id, ppp.fight_id).await?;
                     //时区转换为+8
+                    //TODO 不应该使用unwarp
                     let time = Utc
-                        .timestamp_millis(ppp.start_time)
-                        .with_timezone(&FixedOffset::east(8 * 3600))
+                        .timestamp_millis_opt(ppp.start_time)
+                        .unwrap()
+                        .with_timezone(&FixedOffset::east_opt(8 * 3600).unwrap())
                         + Duration::milliseconds(fight.fiexdtime);
                     msg.push(Text::new(format!(
                         "在 {} 击杀了 {}({})\n",
