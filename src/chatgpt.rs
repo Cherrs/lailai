@@ -13,13 +13,6 @@ struct Request {
     presence_penalty: f64,
 }
 
-#[derive(Debug, Deserialize)]
-struct Response {
-    id: String,
-    prompt: String,
-    completions: Vec<String>,
-}
-
 pub async fn get_ai_message(input: String) -> Result<String> {
     let mut gpt_client = GPTClient::new()?;
     let resp = gpt_client.post(input.to_string()).await?;
