@@ -13,8 +13,12 @@ pub fn init() {
         .set_thread_padding(ThreadPadding::Left(0))
         .build();
     let level;
-    if let Ok(debug) = env::var("debug") && debug == "1" {
-        level = LevelFilter::Debug;
+    if let Ok(log_level) = env::var("lailai-log-level") {
+        match log_level.as_str() {
+            "trace" => level = LevelFilter::Trace,
+            "debug" => level = LevelFilter::Debug,
+            _ => level = LevelFilter::Info,
+        }
     } else {
         level = LevelFilter::Info;
     }
