@@ -1,4 +1,4 @@
-use crate::{chatgpt::get_ai_message, config::GROUP_CONF_BYQQ};
+use crate::{config::GROUP_CONF_BYQQ, openai::get_ai_message};
 use async_trait::async_trait;
 use chrono::{FixedOffset, TimeZone, Utc};
 use fflogsv1::{FFError, FF14};
@@ -57,7 +57,7 @@ impl Handler for MyHandler {
                                 }
                                 _=>{
                                     let mut msg = MessageChain::default();
-                                    let rsp = get_ai_message(t.content).await;
+                                    let rsp = get_ai_message(&self.ff14client.client,&t.content,m.inner.from_uin).await;
                                     msg.with_reply(reply);
                                     match rsp{
                                         Err(e)=>{

@@ -2,10 +2,10 @@
 #![feature(let_chains)]
 #[cfg(any(target_os = "macos", target_os = "windows"))]
 mod captcha_window;
-mod chatgpt;
 mod config;
 mod log;
 mod message_handler;
+mod openai;
 mod pg_store;
 mod report_send;
 mod sled_store;

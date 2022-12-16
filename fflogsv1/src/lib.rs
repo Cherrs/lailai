@@ -12,7 +12,7 @@ use crate::{parses::*, report::*, tables::*};
 #[derive(Clone)]
 pub struct FF14 {
     api_key: String,
-    client: reqwest::Client,
+    pub client: reqwest::Client,
     url: String,
 }
 
