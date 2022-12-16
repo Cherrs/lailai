@@ -4,16 +4,17 @@
 mod captcha_window;
 mod chatgpt;
 mod config;
+mod log;
 mod message_handler;
 mod pg_store;
 mod report_send;
 mod sled_store;
 mod store;
 use crate::message_handler::MyHandler;
+use ::log::{debug, error, info};
 use config::GROUP_CONF;
 use dialoguer::{console::Term, theme::ColorfulTheme, Input, Password, Select};
 use fflogsv1::FF14;
-use log::{debug, error, info};
 use ricq::{
     client::{Connector, DefaultConnector, Token},
     device::Device,
@@ -21,7 +22,7 @@ use ricq::{
     version::{get_version, Protocol},
     Client, LoginNeedCaptcha, LoginResponse, LoginSuccess, LoginUnknownStatus,
 };
-use simplelog::*;
+
 use std::{env, path::Path, sync::Arc, time::Duration};
 use tokio::task::JoinHandle;
 
@@ -29,7 +30,7 @@ use tokio::task::JoinHandle;
 pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
     //初始化配置
     config::init().await;
-    log_init();
+    log::init();
     let (handle, client) = bot_init().await;
     match GROUP_CONF.get() {
         Some(_) => {
@@ -243,31 +244,6 @@ pub async fn bot_init() -> (JoinHandle<()>, Arc<Client>) {
             .expect("无法写入session.key，请检查");
     }
     (handle, client)
-}
-
-///初始化日志
-fn log_init() {
-    let log_config = ConfigBuilder::new()
-        .set_time_format_rfc3339()
-        .add_filter_ignore("sqlx".to_string())
-        .add_filter_ignore_str("mio::poll")
-        .add_filter_ignore_str("want")
-        .set_thread_mode(ThreadLogMode::IDs)
-        .set_thread_padding(ThreadPadding::Left(0))
-        .build();
-    let level;
-    if let Ok(debug) = env::var("debug") && debug == "1" {
-        level = LevelFilter::Debug;
-    } else {
-        level = LevelFilter::Info;
-    }
-    CombinedLogger::init(vec![TermLogger::new(
-        level,
-        log_config,
-        TerminalMode::Mixed,
-        ColorChoice::Auto,
-    )])
-    .unwrap();
 }
 
 struct QQandPassword {
