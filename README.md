@@ -4,7 +4,7 @@
 
 - 基于 ricq 开发的 FF14 开箱即用机器人
 
-- 不需要任何麻烦的配置
+- 配置简单
 
 支持的存储:
 
@@ -42,9 +42,10 @@ config.yaml
 store: local
 rsconstr: postgres://{数据库用户名}:{密码}@{ip}:{port}/{库名}
 logskey: appkey
-interval: 60
+interval: 120
 localpath: db/cache
 historydays: 1
+openai: openai key
 ```
 
 - `store` 使用哪一种缓存，默认local
@@ -55,6 +56,7 @@ historydays: 1
 - `interval` 重试间隔，单位是秒，默认60
 - `localpath` 本地存储位置，默认`db/cache`
 - `historydays` 通报的历史天数，默认为1，1天前的数据不会通报
+- `openai` OpenAI的Key，支持AI回复
 
 ### 配置群消息
 
