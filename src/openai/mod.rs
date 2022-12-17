@@ -37,7 +37,7 @@ pub async fn get_ai_message(client: &reqwest::Client, input: &str, uin: i64) -> 
     match serde_json::from_str::<Value>(&data) {
         Ok(data) => Ok(data["choices"][0]["text"].as_str().unwrap().to_string()),
         Err(e) => {
-            error!("解析openai消息失败,{e}");
+            error!("解析openai消息失败,body:{data},error:{e}");
             Err(anyhow!(e))
         }
     }
