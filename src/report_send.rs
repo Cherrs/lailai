@@ -7,7 +7,6 @@ use crate::{
 use chrono::{DateTime, Duration, FixedOffset, TimeZone, Utc};
 use fflogsv1::{extensions::*, parses::Parses, FF14};
 use futures::future::try_join_all;
-use log::info;
 use ricq::{
     msg::{
         elem::{At, Text},
@@ -17,6 +16,7 @@ use ricq::{
 };
 use std::{collections::HashMap, env};
 use tokio::time::Instant;
+use tracing::info;
 
 pub async fn send_message_init(client: &Client) -> Result<(), Box<dyn std::error::Error>> {
     let store = match env::var("store")

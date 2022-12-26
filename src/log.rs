@@ -1,32 +1,30 @@
 use std::env;
 
-use simplelog::*;
+use tracing::{metadata::LevelFilter, Level};
+use tracing_subscriber::{filter, fmt, prelude::*};
 
 ///初始化日志
 pub fn init() {
-    let log_config = ConfigBuilder::new()
-        .set_time_format_rfc3339()
-        .add_filter_ignore("sqlx".to_string())
-        .add_filter_ignore_str("mio::poll")
-        .add_filter_ignore_str("want")
-        .set_thread_mode(ThreadLogMode::IDs)
-        .set_thread_padding(ThreadPadding::Left(0))
-        .build();
     let level;
     if let Ok(log_level) = env::var("lailai-log-level") {
         match log_level.as_str() {
-            "trace" => level = LevelFilter::Trace,
-            "debug" => level = LevelFilter::Debug,
-            _ => level = LevelFilter::Info,
+            "trace" => level = Level::TRACE,
+            "debug" => level = Level::DEBUG,
+            _ => level = Level::INFO,
         }
     } else {
-        level = LevelFilter::Info;
-    }
-    CombinedLogger::init(vec![TermLogger::new(
-        level,
-        log_config,
-        TerminalMode::Mixed,
-        ColorChoice::Auto,
-    )])
-    .unwrap();
+        level = Level::INFO;
+    };
+    let debug = cfg!(debug_assertions);
+    let layer = fmt::layer()
+        .pretty()
+        .with_file(debug)
+        .with_line_number(debug)
+        .with_filter(LevelFilter::from_level(level))
+        .with_filter(filter::filter_fn(|m| {
+            m.target().contains("lailai")
+                || m.target().contains("ricq")
+                || m.target().contains("fflogsv1")
+        }));
+    tracing_subscriber::registry().with(layer).init();
 }

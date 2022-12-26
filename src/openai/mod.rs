@@ -1,9 +1,9 @@
 use std::env::var;
 
 use anyhow::{anyhow, Result};
-use log::{error, trace};
 use reqwest::header::{HeaderMap, AUTHORIZATION, CONTENT_TYPE};
 use serde_json::{json, Value};
+use tracing::{error, trace};
 
 pub async fn get_ai_message(client: &reqwest::Client, input: &str, uin: i64) -> Result<String> {
     let headers = match openai_headers() {

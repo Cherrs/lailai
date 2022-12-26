@@ -1,11 +1,11 @@
 use futures::future::try_join_all;
-use log::error;
 use reqwest::Response;
 use reqwest::StatusCode;
 use serde::de::DeserializeOwned;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_json::Value;
+use tracing::error;
 
 use crate::FFError;
 use crate::FF14;

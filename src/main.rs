@@ -11,7 +11,7 @@ mod report_send;
 mod sled_store;
 mod store;
 use crate::message_handler::MyHandler;
-use ::log::{debug, error, info};
+use ::tracing::{debug, error, info};
 use config::GROUP_CONF;
 use dialoguer::{console::Term, theme::ColorfulTheme, Input, Password, Select};
 use fflogsv1::FF14;

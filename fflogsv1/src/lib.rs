@@ -3,10 +3,10 @@ pub mod extensions;
 pub mod parses;
 pub mod report;
 pub mod tables;
-use log::{error, info};
 use reqwest::{Response, StatusCode};
 use serde::{de::DeserializeOwned, Deserialize};
 use thiserror::Error;
+use tracing::{error, info};
 
 use crate::{parses::*, report::*, tables::*};
 #[derive(Clone)]
