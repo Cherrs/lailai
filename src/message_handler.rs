@@ -1,8 +1,11 @@
-use crate::{config::GROUP_CONF_BYQQ, openai::get_ai_message};
+use crate::{
+    config::{DOTA_GROUP_CONF_BYQQ, GROUP_CONF_BYQQ},
+    openai::get_ai_message,
+};
 use async_trait::async_trait;
 use chrono::{FixedOffset, TimeZone, Utc};
 use fflogsv1::{FFError, FF14};
-use log::{debug, error, info};
+use opendota::heroes::HEROS;
 use ricq::{
     handler::{Handler, QEvent},
     msg::elem::*,
@@ -10,6 +13,7 @@ use ricq::{
     Client,
 };
 use std::sync::Arc;
+use tracing::{debug, error, info};
 
 pub struct MyHandler {
     pub ff14client: FF14,
@@ -54,6 +58,12 @@ impl Handler for MyHandler {
                                         error!("发送错误{}",e);
                                     }
                                     info!("{}",itemstr);
+                                }
+                                Some(c) if c == "战绩"=>{
+                                    let msg = send_dota_recent_matches_to_group(&m.inner.from_uin,&self.ff14client.client).await;
+                                    if let Err(e) = m.client.send_group_message(m.inner.group_code, msg).await{
+                                        error!("发送错误{}",e);
+                                    }
                                 }
                                 _=>{
                                     let mut msg = MessageChain::default();
@@ -229,6 +239,38 @@ async fn send_item_data_to_group(
             }
             let name = Text::new(format!("{}\n", i.name));
             msg.push(name);
+        }
+    }
+    msg
+}
+///发送最近的比赛到群
+async fn send_dota_recent_matches_to_group(uin: &i64, client: &reqwest::Client) -> MessageChain {
+    let mut msg = MessageChain::default();
+    let Some(steam_id) =DOTA_GROUP_CONF_BYQQ.get()
+    else {
+        error!("QQ:{} 没有配置steam_id",uin);
+        msg.push(Text::new(String::from("不知道")));
+        return msg;
+    };
+    let steam_id = &steam_id[uin];
+    let opendota = opendota::OpenDota::new(client.clone());
+    let data = opendota.players_recent_matches(&steam_id.steam_id).await;
+    match data {
+        Ok(data) => {
+            for i in data {
+                msg.push(Text::new(format!(
+                    "比赛ID:{} 使用英雄:{} KDA:{}/{}/{}\n",
+                    i.match_id.unwrap(),
+                    HEROS.lock()[&i.hero_id.unwrap()].as_str(),
+                    i.kills.unwrap(),
+                    i.deaths.unwrap(),
+                    i.assists.unwrap()
+                )));
+            }
+        }
+        Err(e) => {
+            error!("获取最近场次失败，{}", e);
+            msg.push(Text::new(String::from("不知道")));
         }
     }
     msg
