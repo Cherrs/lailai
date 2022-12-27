@@ -38,12 +38,24 @@
 
 config.yaml
 
+本地存储示例：
+
 ``` yaml
 store: local
-rsconstr: postgres://{数据库用户名}:{密码}@{ip}:{port}/{库名}
-logskey: appkey
+logskey: fflogs的key
 interval: 120
 localpath: db/cache
+historydays: 1
+openai: openai key
+```
+
+使用postgresql存储示例：
+
+``` yaml
+store: postgres
+rsconstr: postgres://{数据库用户名}:{密码}@{ip}:{port}/{库名}
+logskey: fflogs的key
+interval: 120
 historydays: 1
 openai: openai key
 ```
@@ -63,7 +75,7 @@ openai: openai key
 group_config.yaml
 
 ``` yaml
-- qq: {qq号，是0则永远不会at}
+- qq: {qq号，是0则不会at}
   name: {角色名}
   server: {服务器}
   group: 
