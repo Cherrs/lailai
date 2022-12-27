@@ -257,7 +257,7 @@ async fn send_dota_recent_matches_to_group(uin: &i64, client: &reqwest::Client) 
     let data = opendota.players_recent_matches(&steam_id.steam_id).await;
     match data {
         Ok(data) => {
-            for i in data {
+            for i in data.iter() {
                 msg.push(Text::new(format!(
                     "比赛ID:{} 使用英雄:{} KDA:{}/{}/{}\n",
                     i.match_id.unwrap(),
