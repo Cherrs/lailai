@@ -128,7 +128,7 @@ pub async fn send_message_init(client: &Client) -> Result<(), Box<dyn std::error
                         ppp.report_id, ppp.fight_id
                     )));
                     if issend {
-                        client.send_group_message(*groupid, msg).await.unwrap();
+                        client.send_group_message(*groupid, msg).await?;
                     }
                 }
                 store.add_cache(ppp).await;
