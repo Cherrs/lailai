@@ -81,7 +81,7 @@ jobs:
       with:
         use-cross: true
         command: build
-        args: --target ${{ matrix.target }}
+        args: --release --target ${{ matrix.target }}
 
     - run: cp target/${{ matrix.target }}/release/lailai lailai-${{ steps.get_version.outputs.VERSION }}-${{ matrix.target }}
     - name: Release
