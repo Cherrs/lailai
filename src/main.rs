@@ -32,28 +32,30 @@ pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
     config::init().await;
     log::init();
     let (handle, client) = bot_init().await;
-    match GROUP_CONF.get() {
-        Some(_) => {
-            loop {
-                //获取logs数据，检测更新发送到群
-                match report_send::send_message_init(&client).await {
-                    Ok(_) => {}
-                    Err(e) => error!("{:?}", e),
+    let logs_loop = tokio::spawn(async move {
+        match GROUP_CONF.get() {
+            Some(_) => {
+                loop {
+                    //获取logs数据，检测更新发送到群
+                    if let Err(e) = report_send::send_message_init(&client).await {
+                        error!("{:?}", e);
+                    }
+                    let interval = env::var("interval")
+                        .unwrap_or_else(|_| "60".to_string())
+                        .parse::<u64>()
+                        .unwrap();
+                    debug!("{}秒后重新查询", interval);
+                    tokio::time::sleep(Duration::from_secs(interval)).await;
                 }
-                let interval = env::var("interval")
-                    .unwrap_or_else(|_| "60".to_string())
-                    .parse::<u64>()
-                    .unwrap();
-                debug!("{}秒后重新查询", interval);
-                tokio::time::sleep(Duration::from_secs(interval)).await;
+            }
+            None => {
+                info!("没有读取到群配置，禁用logs警察功能");
             }
         }
-        None => {
-            info!("没有读取到群配置，禁用logs警察功能");
-        }
-    }
+    });
 
     handle.await.unwrap();
+    logs_loop.await.unwrap();
     Ok(())
 }
 ///初始化机器人
