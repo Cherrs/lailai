@@ -83,11 +83,7 @@ jobs:
         command: build
         args: --target ${{ matrix.target }}
 
-    # - run: sudo apt-get install musl-tools
-    # - name: build ${{ matrix.target }}
-    #   run: cargo build --release --verbose --target ${{ matrix.target }}
-    # - run: strip target/${{ matrix.target }}/release/lailai
-    # - run: cp target/${{ matrix.target }}/release/lailai lailai-${{ steps.get_version.outputs.VERSION }}-${{ matrix.target }}
+    - run: cp target/${{ matrix.target }}/release/lailai lailai-${{ steps.get_version.outputs.VERSION }}-${{ matrix.target }}
     - name: Release
       uses: softprops/action-gh-release@v1
       with:
