@@ -66,3 +66,7 @@ strip = "debuginfo"
 
 [workspace]
 members = ["fflogsv1", "opendota"]
+
+[package.metadata.cross.target.aarch64-unknown-linux-gnu]
+image = "ghcr.io/cross-rs/aarch64-unknown-linux-gnu:latest"
+dockerfile = "./.cross/aarch64-unknown-linux-gnu/DockerFile"
