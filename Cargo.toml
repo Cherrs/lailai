@@ -61,7 +61,7 @@ opt-level = "z"
 #codegen-units = 1
 panic = "abort"
 # debug = 0
-strip = "debuginfo"
+strip = true
 [profile]
 
 [workspace]
