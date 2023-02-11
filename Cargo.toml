@@ -34,11 +34,9 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3" }
 
 #sendreport缓存数据
-sqlx = { version = "0.6", features = ["runtime-tokio-rustls", "postgres"] }
 sled = "0.34"
 
-fflogsv1 = { path = "./fflogsv1" }
-opendota = { path = "./opendota" }
+
 #qq协议库
 ricq = { git = "https://github.com/lz1998/ricq" }
 
@@ -49,18 +47,36 @@ anyhow = "1"
 #控制台
 dialoguer = "0.10"
 
-#reqwest
-reqwest = "0.11"
 
-[target.'cfg(any(target_os = "macos", target_os = "windows"))'.dependencies]
+[target.'cfg(target_os = "linux")'.dependencies]
+sqlx = { version = "0.6", features = ["runtime-tokio-rustls", "postgres"] }
+#reqwest
+reqwest = { version = "0.11", default-features = false, features = [
+    "rustls-tls",
+] }
+fflogsv1 = { path = "./fflogsv1" }
+opendota = { path = "./opendota" }
+
+[target.'cfg(not(target_os = "linux"))'.dependencies]
+sqlx = { version = "0.6", features = ["runtime-tokio-native-tls", "postgres"] }
+fflogsv1 = { path = "./fflogsv1", default-features = false, features = [
+    "native-tls",
+    "json",
+] }
+opendota = { path = "./opendota", default-features = false, features = [
+    "native-tls",
+] }
+reqwest = { version = "0.11" }
+
+[target.'cfg(any(target_os = "windows",target_os = "macos"))'.dependencies]
 wry = "0.23"
+
 
 [profile.release]
 lto = true
 opt-level = "z"
-#codegen-units = 1
+codegen-units = 1
 panic = "abort"
-# debug = 0
 strip = true
 [profile]
 
@@ -69,4 +85,6 @@ members = ["fflogsv1", "opendota"]
 
 [package.metadata.cross.target.aarch64-unknown-linux-gnu]
 image = "ghcr.io/cross-rs/aarch64-unknown-linux-gnu:latest"
-dockerfile = "./.cross/aarch64-unknown-linux-gnu/DockerFile"
+
+[package.metadata.cross.target.x86-64-unknown-linux-gnu]
+image = "ghcr.io/cross-rs/x86-64-unknown-linux-gnu:latest"
