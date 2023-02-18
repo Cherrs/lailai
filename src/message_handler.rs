@@ -234,7 +234,7 @@ async fn send_item_data_to_group(
     };
     if let Some(icon) = icon {
         for i in icon {
-            if let Ok(g) = client.upload_group_image(group_code, i.icon).await {
+            if let Ok(g) = client.upload_group_image(group_code, &i.icon).await {
                 msg.push(g);
             }
             let name = Text::new(format!("{}\n", i.name));
@@ -298,7 +298,7 @@ async fn send_item_price_to_group(
         return msg;
     }
     let mut item_price_list = item_price.price_list.iter().take(8);
-    if let Ok(g) = client.upload_group_image(group_code, item_price.icon).await {
+    if let Ok(g) = client.upload_group_image(group_code, &item_price.icon).await {
         msg.push(g);
     }
     msg.push(Text::new(item_price.name));
