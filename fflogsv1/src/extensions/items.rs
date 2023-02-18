@@ -54,7 +54,7 @@ impl FF14 {
         Ok(Item {
             icon: result,
             id: item.id,
-            name: item.name.clone(),
+            name: item.name,
         })
     }
 }

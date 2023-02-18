@@ -35,14 +35,14 @@ impl FF14 {
         for i in items_price {
             let mut is: Vec<ItemsPriceList> = i
                 .listings
-                .iter()
+                .into_iter()
                 .map(|x| {
                     let result = ItemsPriceList {
                         num: x.quantity,
                         price: x.total,
                         unit_price: x.price_per_unit,
                         server_name: i.world_name.as_ref().unwrap().to_string(),
-                        seller_name: x.retainer_name.clone(),
+                        seller_name: x.retainer_name,
                         last_update_time: i.last_upload_time,
                     };
                     result
@@ -52,8 +52,8 @@ impl FF14 {
         }
         items.sort_unstable_by_key(|x| x.unit_price);
         Ok(ItemsPrice {
-            icon: item.icon.clone(),
-            name: item.name.clone(),
+            icon: item.icon,
+            name: item.name,
             price_list: items,
         })
     }
