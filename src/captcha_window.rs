@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{borrow::Cow, collections::HashMap};
 
 use wry::{
     application::{
@@ -42,10 +42,7 @@ pub fn ticket(url: &str) -> Option<String> {
         .with_custom_protocol("ricq".into(), move |request| {
             let _ticket = String::from_utf8_lossy(request.body()).to_string();
             let _ = proxy.send_event(UserEvents::CloseWindow(_ticket));
-            Ok(Response::builder()
-                .status(200)
-                .body("ok".as_bytes().to_vec())
-                .unwrap())
+            Ok(Response::builder().body(Cow::from(b"ok".to_vec())).unwrap())
         })
         .with_initialization_script(
             r#"
