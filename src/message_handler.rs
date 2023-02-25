@@ -135,6 +135,9 @@ impl Handler for MyHandler {
                 }
             }
             QEvent::Login(_) => {}
+            QEvent::ClientDisconnect(m) => {
+                error!("可能掉线,{:?}", m.inner.status());
+            }
             _ => {
                 debug!("{:?}", e);
             }
