@@ -1,5 +1,6 @@
 use std::{borrow::Cow, collections::HashMap};
 
+use reqwest::header::CONTENT_TYPE;
 use wry::{
     application::{
         dpi::LogicalSize,
@@ -42,7 +43,10 @@ pub fn ticket(url: &str) -> Option<String> {
         .with_custom_protocol("ricq".into(), move |request| {
             let _ticket = String::from_utf8_lossy(request.body()).to_string();
             let _ = proxy.send_event(UserEvents::CloseWindow(_ticket));
-            Ok(Response::builder().body(Cow::from(b"ok".to_vec())).unwrap())
+            Response::builder()
+                .header(CONTENT_TYPE, "application/json")
+                .body(Cow::from(b"ok".to_vec()))
+                .map_err(Into::into)
         })
         .with_initialization_script(
             r#"
