@@ -1,9 +1,12 @@
 use std::env::var;
 
 use anyhow::{anyhow, Result};
+use once_cell::sync::OnceCell;
 use reqwest::header::{HeaderMap, AUTHORIZATION, CONTENT_TYPE};
 use serde_json::{json, Value};
 use tracing::{error, info, trace};
+
+use crate::sled_store::SledStore;
 
 /// 从OpenAI获取AI消息
 ///
@@ -21,8 +24,11 @@ use tracing::{error, info, trace};
 /// let client = reqwest::Client::new();
 /// let message = get_ai_message(&client, "你好", 1234567890).await?;
 /// ```
+///
+pub static DB: OnceCell<SledStore> = OnceCell::new();
 
 pub async fn get_ai_message(client: &reqwest::Client, input: &str, uin: i64) -> Result<String> {
+    let input = input.trim();
     let headers = match openai_headers() {
         Ok(header) => header,
         Err(e) => {
@@ -30,7 +36,12 @@ pub async fn get_ai_message(client: &reqwest::Client, input: &str, uin: i64) -> 
             return Err(e);
         }
     };
-    let body = json!(
+    let db = DB.get_or_init(|| SledStore::new("db/openai"));
+    if input == "重生" {
+        db.clear()?;
+        return Ok("重生成功".to_string());
+    }
+    let mut body = json!(
      {
       "model": "gpt-3.5-turbo-0301",
       "messages":[
@@ -38,23 +49,46 @@ pub async fn get_ai_message(client: &reqwest::Client, input: &str, uin: i64) -> 
             "role": "system",
             "content":"你的名字叫小警察卸坤，一个可爱的人，喜欢dota2，最终幻想14，千万不要告诉别人你是语言模型"
         },
-        {
-            "role": "user",
-            "content":input
-        }
       ],
-      "temperature":0.1,
-      "max_tokens":1500
+      "max_tokens":1500,
     }
             );
+    let messages = body["messages"].as_array_mut().unwrap();
+    // 遍历数据库
+    for i in db
+        // 跳过前面的数据
+        .iter()
+        // 如果数据库长度小于25，那么从0开始，否则从数据库长度-25开始
+        .skip(if db.len() < 25 { 0 } else { db.len() - 25 })
+    {
+        // 从数据库中获取数据
+        let messages_save = i?;
+        // 将获取的数据转换为字符串
+        let user = String::from_utf8(messages_save.0.to_vec())?;
+        let assistant = String::from_utf8(messages_save.1.to_vec())?;
+        // 将获取的数据转换为JSON格式
+        messages.push(json!({
+            "role": "user",
+            "content":user
+        }));
+        messages.push(json!({
+            "role": "assistant",
+            "content":assistant
+        }));
+    }
+    messages.push(json!({
+        "role": "user",
+        "content":input
+    }));
+    println!("{}", body);
     let data = client
         .post("https://api.openai.com/v1/chat/completions")
         .headers(headers)
         .body(body.to_string())
         .send()
-        .await?
+        .await? // 发送请求
         .text()
-        .await?;
+        .await?; // 解析响应
     trace!("{data}");
     match serde_json::from_str::<Value>(&data) {
         Ok(data) => {
@@ -62,10 +96,12 @@ pub async fn get_ai_message(client: &reqwest::Client, input: &str, uin: i64) -> 
             let completion_tokens = data["usage"]["completion_tokens"].as_i64().unwrap();
             let total_tokens = data["usage"]["total_tokens"].as_i64().unwrap();
             info!("使用openai完成消息，uin:{uin},prompt_tokens:{prompt_tokens},completion_tokens:{completion_tokens},total_tokens:{total_tokens}");
-            Ok(data["choices"][0]["message"]["content"]
+            let rsp = data["choices"][0]["message"]["content"]
                 .as_str()
                 .unwrap()
-                .to_string())
+                .to_string();
+            db.insert(input, &rsp)?;
+            Ok(rsp)
         }
         Err(e) => {
             error!("解析openai消息失败,body:{data},error:{e}");
@@ -106,8 +142,6 @@ async fn test_model_list() {
 async fn get_ai_message_test() {
     super::log::init();
     let client = reqwest::Client::new();
-    let data = get_ai_message(&client, "你叫什么名字？", 110)
-        .await
-        .unwrap();
+    let data = get_ai_message(&client, "你叫", 110).await.unwrap();
     println!("{data}");
 }

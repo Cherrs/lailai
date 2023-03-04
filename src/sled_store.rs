@@ -1,5 +1,6 @@
+use anyhow::{Ok, Result};
 use async_trait::async_trait;
-use sled::Db;
+use sled::{Db, Iter};
 
 use crate::store::Store;
 
@@ -12,6 +13,33 @@ impl SledStore {
         Box::new(SledStore {
             db: sled::open(path).expect("本地存储无法使用"),
         })
+    }
+    /// 创建新的 sled store
+    pub fn new(path: &str) -> SledStore {
+        SledStore {
+            db: sled::open(path).expect("本地存储无法使用"),
+        }
+    }
+
+    /// 插入
+    pub fn insert(&self, key: &str, value: &str) -> Result<()> {
+        self.db.insert(key, value)?;
+        Ok(())
+    }
+
+    /// 迭代
+    pub fn iter(&self) -> Iter {
+        self.db.iter()
+    }
+
+    /// 长度
+    pub fn len(&self) -> usize {
+        self.db.len()
+    }
+
+    /// 清空
+    pub fn clear(&self) -> Result<()> {
+        Ok(self.db.clear()?)
     }
 }
 
@@ -63,6 +91,11 @@ fn insert() {
             .unwrap();
     }
     db.flush().unwrap();
+}
+#[test]
+fn insert_new() {
+    let db = SledStore::new("db/openai");
+    db.insert("真的吗", "真的").unwrap();
 }
 
 #[tokio::test]
