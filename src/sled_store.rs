@@ -1,6 +1,5 @@
-use anyhow::{Ok, Result};
 use async_trait::async_trait;
-use sled::{Db, Iter};
+use sled::Db;
 
 use crate::store::Store;
 
@@ -13,33 +12,6 @@ impl SledStore {
         Box::new(SledStore {
             db: sled::open(path).expect("本地存储无法使用"),
         })
-    }
-    /// 创建新的 sled store
-    pub fn new(path: &str) -> SledStore {
-        SledStore {
-            db: sled::open(path).expect("本地存储无法使用"),
-        }
-    }
-
-    /// 插入
-    pub fn insert(&self, key: &str, value: &str) -> Result<()> {
-        self.db.insert(key, value)?;
-        Ok(())
-    }
-
-    /// 迭代
-    pub fn iter(&self) -> Iter {
-        self.db.iter()
-    }
-
-    /// 长度
-    pub fn len(&self) -> usize {
-        self.db.len()
-    }
-
-    /// 清空
-    pub fn clear(&self) -> Result<()> {
-        Ok(self.db.clear()?)
     }
 }
 
@@ -94,8 +66,29 @@ fn insert() {
 }
 #[test]
 fn insert_new() {
-    let db = SledStore::new("db/openai");
-    db.insert("真的吗", "真的").unwrap();
+    let db = sled::open("db/openai").unwrap();
+    let db = db.open_tree(15i64.to_be_bytes()).unwrap();
+    for i in 0..50 {
+        db.insert(
+            format!("真的吗_{}", i).as_str(),
+            format!("真的_{}", i).as_str(),
+        )
+        .unwrap();
+    }
+}
+
+#[test]
+fn sled_iter() {
+    let db = sled::open("db/openai").unwrap();
+    let db = db.open_tree(16i64.to_be_bytes()).unwrap();
+    for ele in db.iter() {
+        let e = ele.unwrap();
+        println!(
+            "k:{} v:{}",
+            String::from_utf8(e.0.to_vec()).unwrap(),
+            String::from_utf8(e.1.to_vec()).unwrap()
+        );
+    }
 }
 
 #[tokio::test]

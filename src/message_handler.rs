@@ -68,7 +68,7 @@ impl Handler for MyHandler {
                                 }
                                 _=>{
                                     let mut msg = MessageChain::default();
-                                    let rsp = get_ai_message(&self.ff14client.client,&t.content,m.inner.from_uin).await;
+                                    let rsp = get_ai_message(&self.ff14client.client,&t.content,m.inner.from_uin,m.inner.group_code).await;
                                     msg.with_reply(reply);
                                     match rsp{
                                         Err(e)=>{

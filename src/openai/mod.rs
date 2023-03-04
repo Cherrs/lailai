@@ -3,10 +3,10 @@ use std::env::var;
 use anyhow::{anyhow, Result};
 use once_cell::sync::OnceCell;
 use reqwest::header::{HeaderMap, AUTHORIZATION, CONTENT_TYPE};
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
+use sled::Db;
 use tracing::{error, info, trace};
-
-use crate::sled_store::SledStore;
 
 /// 从OpenAI获取AI消息
 ///
@@ -25,9 +25,20 @@ use crate::sled_store::SledStore;
 /// let message = get_ai_message(&client, "你好", 1234567890).await?;
 /// ```
 ///
-pub static DB: OnceCell<SledStore> = OnceCell::new();
+pub static DB: OnceCell<Db> = OnceCell::new();
 
-pub async fn get_ai_message(client: &reqwest::Client, input: &str, uin: i64) -> Result<String> {
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
+struct Message {
+    user: String,
+    assistant: String,
+}
+
+pub async fn get_ai_message(
+    client: &reqwest::Client,
+    input: &str,
+    uin: i64,
+    group_code: i64,
+) -> Result<String> {
     let input = input.trim();
     let headers = match openai_headers() {
         Ok(header) => header,
@@ -36,7 +47,8 @@ pub async fn get_ai_message(client: &reqwest::Client, input: &str, uin: i64) -> 
             return Err(e);
         }
     };
-    let db = DB.get_or_init(|| SledStore::new("db/openai"));
+    let db = DB.get_or_init(|| sled::open("db/openai").unwrap());
+    let db = db.open_tree(group_code.to_be_bytes()).unwrap();
     if input == "重生" {
         db.clear()?;
         return Ok("重生成功".to_string());
@@ -64,16 +76,15 @@ pub async fn get_ai_message(client: &reqwest::Client, input: &str, uin: i64) -> 
         // 从数据库中获取数据
         let messages_save = i?;
         // 将获取的数据转换为字符串
-        let user = String::from_utf8(messages_save.0.to_vec())?;
-        let assistant = String::from_utf8(messages_save.1.to_vec())?;
+        let message: Message = bincode::deserialize(&messages_save.1)?;
         // 将获取的数据转换为JSON格式
         messages.push(json!({
             "role": "user",
-            "content":user
+            "content":message.user
         }));
         messages.push(json!({
             "role": "assistant",
-            "content":assistant
+            "content":message.assistant
         }));
     }
     messages.push(json!({
@@ -90,6 +101,7 @@ pub async fn get_ai_message(client: &reqwest::Client, input: &str, uin: i64) -> 
         .text()
         .await?; // 解析响应
     trace!("{data}");
+    let index = db.len() + 1;
     match serde_json::from_str::<Value>(&data) {
         Ok(data) => {
             let prompt_tokens = data["usage"]["prompt_tokens"].as_i64().unwrap();
@@ -100,7 +112,12 @@ pub async fn get_ai_message(client: &reqwest::Client, input: &str, uin: i64) -> 
                 .as_str()
                 .unwrap()
                 .to_string();
-            db.insert(input, &rsp)?;
+            let msg = Message {
+                assistant: rsp.clone(),
+                user: input.to_string(),
+            };
+            let msg: Vec<u8> = bincode::serialize(&msg).unwrap();
+            db.insert(index.to_be_bytes(), msg)?;
             Ok(rsp)
         }
         Err(e) => {
@@ -142,6 +159,6 @@ async fn test_model_list() {
 async fn get_ai_message_test() {
     super::log::init();
     let client = reqwest::Client::new();
-    let data = get_ai_message(&client, "你叫", 110).await.unwrap();
+    let data = get_ai_message(&client, "你叫", 110, 15).await.unwrap();
     println!("{data}");
 }
