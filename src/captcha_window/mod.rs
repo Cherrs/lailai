@@ -18,6 +18,7 @@ pub fn ticket(url: &str) -> Option<String> {
     enum UserEvents {
         CloseWindow(String),
     }
+    let script = include_str!("./script.js");
     let mut ticket = None;
     let mut event_loop = EventLoop::<UserEvents>::with_user_event();
     let proxy = event_loop.create_proxy();
@@ -34,42 +35,23 @@ pub fn ticket(url: &str) -> Option<String> {
     let windowid = window.id();
     let _webview = WebViewBuilder::new(window)
         .unwrap()
-        .with_url(url)
-        .unwrap()
         .with_devtools(true)
         .with_ipc_handler(move |_, s| {
+            println!("{}", s);
             let _ = ipcproxy.send_event(UserEvents::CloseWindow(s));
         })
         .with_custom_protocol("ricq".into(), move |request| {
+            println!("{:?}", request);
             let _ticket = String::from_utf8_lossy(request.body()).to_string();
             let _ = proxy.send_event(UserEvents::CloseWindow(_ticket));
             Response::builder()
                 .header(CONTENT_TYPE, "application/json")
-                .body(Cow::from(b"ok".to_vec()))
+                .body(Cow::from(b"{}".to_vec()))
                 .map_err(Into::into)
         })
-        .with_initialization_script(
-            r#"
-            var origOpen = XMLHttpRequest.prototype.open;
-            XMLHttpRequest.prototype.open = function () {
-                this.addEventListener('load', function () {
-                    if (this.responseURL == 'https://t.captcha.qq.com/cap_union_new_verify') {
-                        var j = JSON.parse(this.responseText);
-                        if (j.errorCode == '0') {
-                            window.ipc.postMessage(j.ticket);
-                            if (navigator.userAgent.indexOf('Windows') > -1) {
-                                fetch('https://ricq.ticket', { 
-                                    method: "POST",
-                                    body: j.ticket
-                                });
-                            }
-                        }
-                    }
-                });
-                origOpen.apply(this, arguments);
-            }
-        "#,
-        )
+        .with_initialization_script(script)
+        .with_url(url)
+        .unwrap()
         .build()
         .unwrap();
     windows.insert(windowid, _webview);

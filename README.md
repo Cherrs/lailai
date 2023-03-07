@@ -26,6 +26,7 @@
 > - 账号密码登录需要滑块ticket，建议扫描二维码登录
 > - 没有配置`group_config.yaml`默认不启用查询logs
 > - 若无法登录，尝试删除目录下`session.key`和`device.json`文件
+> - 密码登录需要滑块，在Windows下依赖[WebView2 运行时](https://developer.microsoft.com/zh-cn/microsoft-edge/webview2/)，请确认已经安装
 
 ## 配置
 
