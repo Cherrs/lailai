@@ -1,5 +1,6 @@
 #![feature(fs_try_exists)]
 #![feature(let_chains)]
+#![allow(clippy::redundant_async_block)]
 #[cfg(any(target_os = "macos", target_os = "windows"))]
 mod captcha_window;
 mod config;
