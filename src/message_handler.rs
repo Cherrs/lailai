@@ -99,10 +99,26 @@ impl Handler for MyHandler {
                 }
             }
             QEvent::FriendMessage(m) => {
-                info!(
-                    "MESSAGE (FRIEND={}): {}",
-                    m.inner.from_uin, m.inner.elements
-                );
+                let mut msg = MessageChain::default();
+                let rsp = get_ai_message(
+                    &self.ff14client.client,
+                    &m.inner.elements.to_string(),
+                    m.inner.from_uin,
+                    m.inner.from_uin,
+                )
+                .await;
+                match rsp {
+                    Err(e) => {
+                        error!("{}", e);
+                        msg.push(Text::new("不知道，你可以再问一次试试".to_string()));
+                    }
+                    Ok(r) => {
+                        msg.push(Text::new(r));
+                    }
+                }
+                if let Err(e) = m.client.send_friend_message(m.inner.from_uin, msg).await {
+                    error!("发送错误{}", e);
+                }
             }
             QEvent::GroupTempMessage(m) => {
                 info!("MESSAGE (TEMP={}): {}", m.inner.from_uin, m.inner.elements);

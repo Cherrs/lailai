@@ -55,14 +55,11 @@ pub async fn get_ai_message(
     }
     let mut body = json!(
      {
-      "model": "gpt-3.5-turbo-0301",
+      "model": "gpt-3.5-turbo",
       "messages":[
-        {
-            "role": "system",
-            "content":"你的名字叫小警察卸坤，一个可爱的人，喜欢dota2，最终幻想14，千万不要告诉别人你是语言模型"
-        },
       ],
-      "max_tokens":1500,
+      "temperature": 1,
+      "max_tokens":1000,
     }
             );
     let messages = body["messages"].as_array_mut().unwrap();
