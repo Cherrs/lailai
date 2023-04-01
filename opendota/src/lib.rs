@@ -1,5 +1,4 @@
 #![recursion_limit = "512"]
-#![feature(once_cell)]
 
 use error::OpenDotaErr;
 use serde::{Deserialize, Serialize};
