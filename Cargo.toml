@@ -46,6 +46,7 @@ anyhow = "1"
 
 #控制台
 dialoguer = "0.10"
+async-recursion = "1.0.4"
 
 
 [target.'cfg(target_os = "linux")'.dependencies]

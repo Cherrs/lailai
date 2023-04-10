@@ -1,6 +1,7 @@
 use std::env::var;
 
 use anyhow::{anyhow, Result};
+use async_recursion::async_recursion;
 use once_cell::sync::OnceCell;
 use reqwest::header::{HeaderMap, AUTHORIZATION, CONTENT_TYPE};
 use serde::{Deserialize, Serialize};
@@ -53,6 +54,18 @@ pub async fn get_ai_message(
         db.clear()?;
         return Ok("重生成功".to_string());
     }
+    let data = post_data(&db, client, &headers, input, uin, 0).await?;
+    Ok(data)
+}
+#[async_recursion]
+async fn post_data(
+    db: &sled::Tree,
+    client: &reqwest::Client,
+    headers: &HeaderMap,
+    input: &str,
+    uin: i64,
+    skip: usize,
+) -> Result<String> {
     let mut body = json!(
      {
       "model": "gpt-3.5-turbo",
@@ -68,7 +81,7 @@ pub async fn get_ai_message(
         // 跳过前面的数据
         .iter()
         // 如果数据库长度小于25，那么从0开始，否则从数据库长度-25开始
-        .skip(if db.len() < 25 { 0 } else { db.len() - 25 })
+        .skip((if db.len() < 25 { 0 } else { db.len() - 25 }) + skip)
     {
         // 从数据库中获取数据
         let messages_save = i?;
@@ -91,16 +104,22 @@ pub async fn get_ai_message(
     println!("{}", body);
     let data = client
         .post("https://api.openai.com/v1/chat/completions")
-        .headers(headers)
+        .headers(headers.clone())
         .body(body.to_string())
         .send()
         .await? // 发送请求
         .text()
-        .await?; // 解析响应
+        .await?;
+    // 解析响应
     trace!("{data}");
     let index = db.len() + 1;
     match serde_json::from_str::<Value>(&data) {
         Ok(data) => {
+            if !data["error"]["code"].is_null()
+                && data["error"]["code"].as_str().unwrap() == "context_length_exceeded"
+            {
+                return post_data(db, client, headers, input, uin, skip + 1).await;
+            }
             let prompt_tokens = data["usage"]["prompt_tokens"].as_i64().unwrap();
             let completion_tokens = data["usage"]["completion_tokens"].as_i64().unwrap();
             let total_tokens = data["usage"]["total_tokens"].as_i64().unwrap();
