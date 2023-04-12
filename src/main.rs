@@ -13,6 +13,7 @@ mod sled_store;
 mod store;
 use crate::message_handler::MyHandler;
 use ::tracing::{debug, error, info};
+use anyhow::Result;
 use config::GROUP_CONF;
 use dialoguer::{console::Term, theme::ColorfulTheme, Input, Password, Select};
 use fflogsv1::FF14;
@@ -20,9 +21,11 @@ use ricq::{
     client::{Connector, DefaultConnector, Token},
     device::Device,
     ext::common::after_login,
+    msg::{elem::Text, MessageChain},
     version::{get_version, Protocol},
     Client, LoginNeedCaptcha, LoginResponse, LoginSuccess, LoginUnknownStatus,
 };
+use tracing::trace;
 
 use std::{env, path::Path, sync::Arc, time::Duration};
 use tokio::task::JoinHandle;
@@ -33,6 +36,16 @@ pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
     config::init().await;
     log::init();
     let (handle, client) = bot_init().await;
+    match env::var("ALIVE_QQ") {
+        Ok(data) => {
+            if let Ok(alive_uin) = data.parse::<i64>() {
+                tokio::spawn(alive(client.clone(), alive_uin));
+            }
+        }
+        Err(e) => {
+            trace!("启动alive线程失败，err:{}", e);
+        }
+    };
     let logs_loop = tokio::spawn(async move {
         match GROUP_CONF.get() {
             Some(_) => {
@@ -247,6 +260,14 @@ pub async fn bot_init() -> (JoinHandle<()>, Arc<Client>) {
             .expect("无法写入session.key，请检查");
     }
     (handle, client)
+}
+
+async fn alive(client: Arc<Client>, uin: i64) {
+    loop {
+        let message = MessageChain::new(Text::new(String::from("alive!")));
+        client.send_friend_message(uin, message).await.unwrap();
+        tokio::time::sleep(Duration::from_secs(3600)).await;
+    }
 }
 
 struct QQandPassword {
