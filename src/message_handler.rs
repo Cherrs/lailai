@@ -1,6 +1,7 @@
 use crate::{
     config::{DOTA_GROUP_CONF_BYQQ, GROUP_CONF_BYQQ},
-    openai::get_ai_message,
+    openai::{get_ai_message, get_sd_prompt},
+    sd,
 };
 use async_trait::async_trait;
 use chrono::{FixedOffset, TimeZone, Utc};
@@ -66,6 +67,11 @@ impl Handler for MyHandler {
                                         error!("发送错误{}",e);
                                     }
                                 }
+                                Some(c) if c == "画画"=>{
+                                    let str:Vec<&str> = args.collect();
+                                    let str = str.join(" ");
+                                    huahua(&self.ff14client.client, &str,m.client.uin().await, m.inner.group_code, "group".to_string(), m.inner.from_uin).await.unwrap();
+                                }
                                 _=>{
                                     let mut msg = MessageChain::default();
                                     let rsp = get_ai_message(&self.ff14client.client,&t.content,m.inner.from_uin,m.inner.group_code).await;
@@ -99,25 +105,48 @@ impl Handler for MyHandler {
                 }
             }
             QEvent::FriendMessage(m) => {
-                let mut msg = MessageChain::default();
-                let rsp = get_ai_message(
-                    &self.ff14client.client,
-                    &m.inner.elements.to_string(),
-                    m.inner.from_uin,
-                    m.inner.from_uin,
-                )
-                .await;
-                match rsp {
-                    Err(e) => {
-                        error!("{}", e);
-                        msg.push(Text::new("不知道，你可以再问一次试试".to_string()));
+                let content = &m.inner.elements.to_string();
+                let mut args: Vec<&str> = content.split(' ').collect();
+                args.retain(|x| !x.is_empty());
+                let mut args = args.iter().copied();
+                debug!("{:?}", args);
+                match args.next() {
+                    Some(c) if c == "画画" => {
+                        let str: Vec<&str> = args.collect();
+                        let str = str.join(" ");
+                        huahua(
+                            &self.ff14client.client,
+                            &str,
+                            m.client.uin().await,
+                            m.inner.from_uin,
+                            "friend".to_string(),
+                            m.inner.from_uin,
+                        )
+                        .await
+                        .unwrap();
                     }
-                    Ok(r) => {
-                        msg.push(Text::new(r));
+                    _ => {
+                        let mut msg = MessageChain::default();
+                        let rsp = get_ai_message(
+                            &self.ff14client.client,
+                            content,
+                            m.inner.from_uin,
+                            m.inner.from_uin,
+                        )
+                        .await;
+                        match rsp {
+                            Err(e) => {
+                                error!("{}", e);
+                                msg.push(Text::new("不知道，你可以再问一次试试".to_string()));
+                            }
+                            Ok(r) => {
+                                msg.push(Text::new(r));
+                            }
+                        }
+                        if let Err(e) = m.client.send_friend_message(m.inner.from_uin, msg).await {
+                            error!("发送错误{}", e);
+                        }
                     }
-                }
-                if let Err(e) = m.client.send_friend_message(m.inner.from_uin, msg).await {
-                    error!("发送错误{}", e);
                 }
             }
             QEvent::GroupTempMessage(m) => {
@@ -351,4 +380,18 @@ async fn send_item_price_to_group(
         chrono::LocalResult::Ambiguous(_, _) => todo!(),
     }
     msg
+}
+
+async fn huahua(
+    client: &reqwest::Client,
+    input: &str,
+    uin: i64,
+    send_to: i64,
+    send_type: String,
+    from_uin: i64,
+) -> anyhow::Result<()> {
+    let prompt = get_sd_prompt(client, input).await?;
+
+    sd::send(prompt, uin, send_to, send_type, from_uin).await?;
+    Ok(())
 }

@@ -57,6 +57,56 @@ pub async fn get_ai_message(
     let data = post_data(&db, client, &headers, input, uin, 0).await?;
     Ok(data)
 }
+
+pub async fn get_sd_prompt(client: &reqwest::Client, input: &str) -> Result<String> {
+    let input = input.trim();
+    let headers = match openai_headers() {
+        Ok(header) => header,
+        Err(e) => {
+            error!("openai 无法获取header，请检查配置是否正确");
+            return Err(e);
+        }
+    };
+    let content = format!("从我输入的话中提取关键词翻译成英文，你只回复英文单词，用逗号分隔，其他什么都不要说，如果有one替换成solo，如果我的输入中有人物，回复需要包含girl或者man。不要在结尾使用.我输入：{}",input);
+    let body = json!(
+     {
+      "model": "gpt-3.5-turbo",
+      "messages":[
+        {"role":"user","content":content}
+      ],
+      "temperature": 1,
+      "max_tokens":300,
+    }
+            );
+
+    let data = client
+        .post("https://api.openai.com/v1/chat/completions")
+        .headers(headers.clone())
+        .body(body.to_string())
+        .send()
+        .await? // 发送请求
+        .text()
+        .await?;
+
+    match serde_json::from_str::<Value>(&data) {
+        Ok(data) => {
+            let prompt_tokens = data["usage"]["prompt_tokens"].as_i64().unwrap();
+            let completion_tokens = data["usage"]["completion_tokens"].as_i64().unwrap();
+            let total_tokens = data["usage"]["total_tokens"].as_i64().unwrap();
+            info!("使用openai完成消息,prompt_tokens:{prompt_tokens},completion_tokens:{completion_tokens},total_tokens:{total_tokens}");
+            let rsp = data["choices"][0]["message"]["content"]
+                .as_str()
+                .unwrap()
+                .to_string();
+            Ok(rsp)
+        }
+        Err(e) => {
+            error!("解析openai消息失败,body:{data},error:{e}");
+            Err(anyhow!(e))
+        }
+    }
+}
+
 #[async_recursion]
 async fn post_data(
     db: &sled::Tree,
@@ -176,5 +226,12 @@ async fn get_ai_message_test() {
     super::log::init();
     let client = reqwest::Client::new();
     let data = get_ai_message(&client, "你叫", 110, 15).await.unwrap();
+    println!("{data}");
+}
+#[tokio::test]
+async fn get_sd_prompt_test() {
+    super::log::init();
+    let client = reqwest::Client::new();
+    let data = get_sd_prompt(&client, "一个在海边的光头").await.unwrap();
     println!("{data}");
 }

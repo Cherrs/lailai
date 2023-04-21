@@ -9,6 +9,7 @@ mod message_handler;
 mod openai;
 mod pg_store;
 mod report_send;
+mod sd;
 mod sled_store;
 mod store;
 use crate::message_handler::MyHandler;
@@ -46,12 +47,13 @@ pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
             trace!("启动alive线程失败，err:{}", e);
         }
     };
+    let client_p = client.clone();
     let logs_loop = tokio::spawn(async move {
         match GROUP_CONF.get() {
             Some(_) => {
                 loop {
                     //获取logs数据，检测更新发送到群
-                    if let Err(e) = report_send::send_message_init(&client).await {
+                    if let Err(e) = report_send::send_message_init(&client_p).await {
                         error!("{:?}", e);
                     }
                     let interval = env::var("interval")
@@ -65,6 +67,12 @@ pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
             None => {
                 info!("没有读取到群配置，禁用logs警察功能");
             }
+        }
+    });
+
+    tokio::spawn(async move {
+        if let Err(e) = sd::start_consume(client.clone()).await {
+            error!("{}", e);
         }
     });
 
