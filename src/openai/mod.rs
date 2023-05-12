@@ -76,7 +76,7 @@ pub async fn get_sd_prompt(client: &reqwest::Client, input: &str) -> Result<Stri
 我输入:{}",input);
     let body = json!(
      {
-      "model": "gpt-3.5-turbo",
+      "model": "gpt-4",
       "messages":[
         {"role":"user","content":content}
       ],
