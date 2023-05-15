@@ -67,7 +67,7 @@ pub async fn get_sd_prompt(client: &reqwest::Client, input: &str) -> Result<Stri
             return Err(e);
         }
     };
-    let content = format!("从我输入的话中提取关键词翻译成英文，你只回复英文单词，用逗号分隔，其他什么都不要说，如果有one替换成solo，包含动词，如果我的输入中有人物，男的回复man，女的回复girl。不要在结尾使用.
+    let content = format!("从我输入的话中提取关键词翻译成英文，你只回复英文单词，用逗号分隔，其他什么都不要说，包含动词，如果有英文保留原来的英文单词,不要在结尾使用.
 例子
 我:下雨天在树下避雨的女孩
 你:rainy day, sheltering under tree, girl, tree
@@ -76,12 +76,12 @@ pub async fn get_sd_prompt(client: &reqwest::Client, input: &str) -> Result<Stri
 我输入:{}",input);
     let body = json!(
      {
-      "model": "gpt-4",
+      "model": "gpt-3.5-turbo",
       "messages":[
         {"role":"user","content":content}
       ],
       "temperature": 1,
-      "max_tokens":300,
+      "max_tokens":1000,
     }
             );
 
@@ -124,7 +124,7 @@ async fn post_data(
 ) -> Result<String> {
     let mut body = json!(
      {
-      "model": "gpt-3.5-turbo",
+      "model": "gpt-4",
       "messages":[
       ],
       "temperature": 1,

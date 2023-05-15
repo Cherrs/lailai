@@ -112,6 +112,7 @@ pub async fn start_consume(client: Arc<Client>) -> Result<()> {
 /// TODO 使用
 pub async fn send(
     prompt: String,
+    negative_prompt: String,
     uin: i64,
     send_to: i64,
     send_type: String,
@@ -121,8 +122,7 @@ pub async fn send(
     let conn = Connection::connect(&addr, ConnectionProperties::default()).await?;
     let channel = conn.create_channel().await?;
 
-    let body =
-        json!({"tag":prompt,"uin":uin,"send_to":send_to,"send_type":send_type,"from_uin":from_uin});
+    let body = json!({"tag":prompt,"uin":uin,"send_to":send_to,"send_type":send_type,"from_uin":from_uin,"negative_prompt":negative_prompt});
 
     channel
         .basic_publish(

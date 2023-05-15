@@ -72,6 +72,11 @@ impl Handler for MyHandler {
                                     let str = str.join(" ");
                                     huahua(&self.ff14client.client, &str,m.client.uin().await, m.inner.group_code, "group".to_string(), m.inner.from_uin).await.unwrap();
                                 }
+                                Some(c) if c == "画画a"=>{
+                                    let str:Vec<&str> = args.collect();
+                                    let str = str.join(" ");
+                                    huahua(&self.ff14client.client, &str,m.client.uin().await, m.inner.group_code, "group".to_string(), m.inner.from_uin).await.unwrap();
+                                }
                                 _=>{
                                     let mut msg = MessageChain::default();
                                     let rsp = get_ai_message(&self.ff14client.client,&t.content,m.inner.from_uin,m.inner.group_code).await;
@@ -382,16 +387,22 @@ async fn send_item_price_to_group(
     msg
 }
 
+fn huahua_split(input: &str) {
+    let sp = input.split("排除:");
+}
+
+/// 画画，新增负面prompt
 async fn huahua(
     client: &reqwest::Client,
     input: &str,
+    negative_prompt: &str,
     uin: i64,
     send_to: i64,
     send_type: String,
     from_uin: i64,
 ) -> anyhow::Result<()> {
     let prompt = get_sd_prompt(client, input).await?;
-
-    sd::send(prompt, uin, send_to, send_type, from_uin).await?;
+    let negative_prompt = get_sd_prompt(client, negative_prompt).await?;
+    sd::send(prompt, negative_prompt, uin, send_to, send_type, from_uin).await?;
     Ok(())
 }
