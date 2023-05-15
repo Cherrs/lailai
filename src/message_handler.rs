@@ -387,8 +387,17 @@ async fn send_item_price_to_group(
     msg
 }
 
-fn huahua_split(input: &str) {
-    let sp = input.split("排除:");
+/// 转换prompt
+/// (prompt,negative_prompt)
+fn huahua_split(input: &str) -> (String, String) {
+    let mut sp = input.split("屏蔽:");
+    let prompt = sp.next();
+    let negative_prompt = sp.next();
+}
+
+#[test]
+fn huahua_split_test() {
+    huahua_split("女人，女孩 屏蔽：男人")
 }
 
 /// 画画，新增负面prompt
